@@ -1,0 +1,43 @@
+discovery.docker "log_scrape" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+}
+
+discovery.relabel "log_scrape" {
+  targets = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+	regex         = "/(.*)"
+	target_label  = "service_name"
+  }
+}
+
+loki.source.docker "log_scrape" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.log_scrape.targets
+  labels     = {"platform" = "docker"}
+  relabel_rules = discovery.relabel.log_scrape.rules
+  forward_to = [loki.process.parse_logs.receiver]
+}
+
+loki.process "parse_logs" {
+  stage.json {
+    expressions = {
+      ts = "time",
+    }
+  }
+
+  stage.timestamp {
+    source = "ts"
+    format = "RFC3339Nano"
+  }
+
+  forward_to = [loki.write.grafana_loki.receiver]
+}
+
+loki.write "grafana_loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

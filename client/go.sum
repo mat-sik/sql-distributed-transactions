@@ -1,0 +1,8 @@
+github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
+github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/mat-sik/sql-distributed-transactions-api v0.0.0-20250622221609-df9b91f447c1 h1:buJUtCBI4wDB7SNZ2FK116ZjhK+H9rbBaBf2FBKtiFw=
+github.com/mat-sik/sql-distributed-transactions-api v0.0.0-20250622221609-df9b91f447c1/go.mod h1:S1kp6DivRc6iM2ZLo+k85Nu8v8C4LlsXiD/u0Pluh+4=
+github.com/mat-sik/sql-distributed-transactions-common v0.0.0-20250614145421-62a6fff72a35 h1:4Prz8p/lHhvZW4ZvMGyAHtUecEkK+38xiS+Yv/OxMSM=
+github.com/mat-sik/sql-distributed-transactions-common v0.0.0-20250614145421-62a6fff72a35/go.mod h1:3GB+zSak3PVCkCuTyx8paY1uAvX6J53o/0ctB0kFaNU=
+github.com/sethvargo/go-envconfig v1.3.0 h1:gJs+Fuv8+f05omTpwWIu6KmuseFAXKrIaOZSh8RMt0U=
+github.com/sethvargo/go-envconfig v1.3.0/go.mod h1:JLd0KFWQYzyENqnEPWWZ49i4vzZo/6nRidxI8YvGiHw=
