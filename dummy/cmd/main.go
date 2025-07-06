@@ -27,7 +27,18 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	collectorConfig := config.NewCollectorConfig(ctx)
+	collectorConfig, err := config.NewCollectorConfig(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize collector config", "err", err)
+		return
+	}
+
+	serverConfig, err := config.NewServerConfig(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize server config", "err", err)
+		return
+	}
+
 	shutdown, err := setup.InitOTelSDK(ctx, collectorConfig.CollectorHost, serviceName)
 	if err != nil {
 		slog.Error("Failed to initialize otel SDK", "err", err)
@@ -45,12 +56,10 @@ func main() {
 	logger := otelslog.NewLogger(instrumentationScope)
 	slog.SetDefault(logger)
 
-	runServer(ctx, tracer, meter)
+	runServer(ctx, tracer, meter, serverConfig)
 }
 
-func runServer(ctx context.Context, tracer trace.Tracer, meter metric.Meter) {
-	serverConfig := config.NewServerConfig(ctx)
-
+func runServer(ctx context.Context, tracer trace.Tracer, meter metric.Meter, serverConfig config.Server) {
 	toCome := make(map[int]struct{}, serverConfig.ToReceive)
 	for i := 0; i < serverConfig.ToReceive; i++ {
 		toCome[i] = struct{}{}

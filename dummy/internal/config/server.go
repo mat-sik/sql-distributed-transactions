@@ -10,11 +10,11 @@ type Server struct {
 	ToReceive int `env:"DUMMY_TO_RECEIVE, default=100_000"`
 }
 
-func NewServerConfig(ctx context.Context) Server {
+func NewServerConfig(ctx context.Context) (Server, error) {
 	var config Server
 	if err := envconfig.Process(ctx, &config); err != nil {
-		panic(err)
+		return Server{}, err
 	}
 
-	return config
+	return config, nil
 }

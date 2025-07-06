@@ -21,7 +21,18 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	collectorConfig := config.NewCollectorConfig(ctx)
+	collectorConfig, err := config.NewCollectorConfig(ctx)
+	if err != nil {
+		slog.Error("failed to initialize collector config", "err", err)
+		return
+	}
+
+	clientConfig, err := config.NewClientConfig(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize client config", "err", err)
+		return
+	}
+
 	shutdown, err := setup.InitOTelSDK(ctx, collectorConfig.CollectorHost, serviceName)
 	if err != nil {
 		slog.Error("Failed to initialize otel SDK", "err", err)
@@ -40,13 +51,11 @@ func main() {
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
 	}
 
-	runClient(ctx, client)
+	runClient(ctx, clientConfig, client)
 }
 
-func runClient(ctx context.Context, client *http.Client) {
+func runClient(ctx context.Context, clientConfig config.Client, client *http.Client) {
 	tClient := api.NewClient(ctx, client)
-
-	clientConfig := config.NewClientConfig(ctx)
 	slog.Info("creating client", "config", clientConfig)
 
 	toSendCh := make(chan commons.EnqueueTransactionRequest, clientConfig.ToSend)

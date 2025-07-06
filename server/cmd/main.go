@@ -25,7 +25,24 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	collectorConfig := config.NewCollectorConfig(ctx)
+	databaseConfig, err := config.NewDatabaseConfig(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize the database config", "err", err)
+		return
+	}
+
+	collectorConfig, err := config.NewCollectorConfig(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize the collector config", "err", err)
+		return
+	}
+
+	serverConfig, err := config.NewServer(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize the server config", "err", err)
+		return
+	}
+
 	shutdown, err := setup.InitOTelSDK(ctx, collectorConfig.CollectorHost, serviceName)
 	if err != nil {
 		slog.Error("Failed to initialize otel SDK", "err", err)
@@ -43,7 +60,7 @@ func main() {
 	logger := otelslog.NewLogger(instrumentationScope)
 	slog.SetDefault(logger)
 
-	pool, err := getDBPool(ctx)
+	pool, err := getDBPool(ctx, databaseConfig)
 	if err != nil {
 		slog.Error("Failed to initialize the pool", "err", err)
 		return
@@ -54,19 +71,22 @@ func main() {
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
 	}
 
-	executorConfig := config.NewExecutorConfig(ctx)
+	executorConfig, err := config.NewExecutorConfig(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize the executor configuration", "err", err)
+		return
+	}
+
 	go func() {
 		slog.Info("starting the executor", "config", executorConfig)
 		e := transaction.NewExecutor(pool, client, executorConfig)
 		e.Start(ctx)
 	}()
 
-	runServer(ctx, tracer, meter, pool)
+	runServer(ctx, tracer, meter, serverConfig, pool)
 }
 
-func getDBPool(ctx context.Context) (*sql.DB, error) {
-	databaseConfig := config.NewDatabaseConfig(ctx)
-
+func getDBPool(ctx context.Context, databaseConfig config.Database) (*sql.DB, error) {
 	pool, err := sql.Open("pgx/v5", databaseConfig.URL)
 	if err != nil {
 		return nil, err
@@ -79,9 +99,8 @@ func getDBPool(ctx context.Context) (*sql.DB, error) {
 	return pool, nil
 }
 
-func runServer(ctx context.Context, tracer trace.Tracer, meter metric.Meter, pool *sql.DB) {
+func runServer(ctx context.Context, tracer trace.Tracer, meter metric.Meter, serverConfig config.Server, pool *sql.DB) {
 	handler := server.NewHandler(pool)
-	serverConfig := config.NewServer(ctx)
 	srv := server.NewServer(serverConfig, handler)
 
 	serverErrCh := make(chan error)
