@@ -25,21 +25,9 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	databaseConfig, err := config.NewDatabaseConfig(ctx)
-	if err != nil {
-		slog.Error("Failed to initialize the database config", "err", err)
-		return
-	}
-
 	collectorConfig, err := config.NewCollectorConfig(ctx)
 	if err != nil {
 		slog.Error("Failed to initialize the collector config", "err", err)
-		return
-	}
-
-	serverConfig, err := config.NewServer(ctx)
-	if err != nil {
-		slog.Error("Failed to initialize the server config", "err", err)
 		return
 	}
 
@@ -60,7 +48,13 @@ func main() {
 	logger := otelslog.NewLogger(instrumentationScope)
 	slog.SetDefault(logger)
 
-	pool, err := getDBPool(ctx, databaseConfig)
+	databaseConfig, err := config.NewDatabaseConfig(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize the database config", "err", err)
+		return
+	}
+
+	pool, err := newDBPool(ctx, databaseConfig)
 	if err != nil {
 		slog.Error("Failed to initialize the pool", "err", err)
 		return
@@ -83,10 +77,16 @@ func main() {
 		e.Start(ctx)
 	}()
 
+	serverConfig, err := config.NewServer(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize the server config", "err", err)
+		return
+	}
+
 	runServer(ctx, tracer, meter, serverConfig, pool)
 }
 
-func getDBPool(ctx context.Context, databaseConfig config.Database) (*sql.DB, error) {
+func newDBPool(ctx context.Context, databaseConfig config.Database) (*sql.DB, error) {
 	pool, err := sql.Open("pgx/v5", databaseConfig.URL)
 	if err != nil {
 		return nil, err

@@ -27,12 +27,6 @@ func main() {
 		return
 	}
 
-	clientConfig, err := config.NewClientConfig(ctx)
-	if err != nil {
-		slog.Error("Failed to initialize client config", "err", err)
-		return
-	}
-
 	shutdown, err := setup.InitOTelSDK(ctx, collectorConfig.CollectorHost, serviceName)
 	if err != nil {
 		slog.Error("Failed to initialize otel SDK", "err", err)
@@ -49,6 +43,12 @@ func main() {
 
 	client := &http.Client{
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}
+
+	clientConfig, err := config.NewClientConfig(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize client config", "err", err)
+		return
 	}
 
 	runClient(ctx, clientConfig, client)

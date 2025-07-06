@@ -33,12 +33,6 @@ func main() {
 		return
 	}
 
-	serverConfig, err := config.NewServerConfig(ctx)
-	if err != nil {
-		slog.Error("Failed to initialize server config", "err", err)
-		return
-	}
-
 	shutdown, err := setup.InitOTelSDK(ctx, collectorConfig.CollectorHost, serviceName)
 	if err != nil {
 		slog.Error("Failed to initialize otel SDK", "err", err)
@@ -55,6 +49,12 @@ func main() {
 
 	logger := otelslog.NewLogger(instrumentationScope)
 	slog.SetDefault(logger)
+
+	serverConfig, err := config.NewServerConfig(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize server config", "err", err)
+		return
+	}
 
 	runServer(ctx, tracer, meter, serverConfig)
 }
