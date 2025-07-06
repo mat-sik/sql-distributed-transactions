@@ -3,36 +3,53 @@ package main
 import (
 	"context"
 	"fmt"
-	api "github.com/mat-sik/sql-distributed-transactions-api/transaction"
-	commons "github.com/mat-sik/sql-distributed-transactions-common/transaction"
+	"github.com/cenkalti/backoff/v5"
+	api "github.com/mat-sik/sql-distributed-transactions/api/transaction"
 	"github.com/mat-sik/sql-distributed-transactions/client/internal/config"
+	setup "github.com/mat-sik/sql-distributed-transactions/common/otel"
+	commons "github.com/mat-sik/sql-distributed-transactions/common/transaction"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"log/slog"
-	"math"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
-	"time"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
-	loggerConfig := config.NewLoggerConfig(ctx)
-	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: loggerConfig.Level,
-	})
+	collectorConfig := config.NewCollectorConfig(ctx)
+	shutdown, err := setup.InitOTelSDK(ctx, collectorConfig.CollectorHost, serviceName)
+	if err != nil {
+		slog.Error("Failed to initialize otel SDK", "err", err)
+		return
+	}
+	defer func() {
+		if err = shutdown(ctx); err != nil {
+			slog.Error("Failed to shutdown otel SDK", "err", err)
+		}
+	}()
 
-	logger := slog.New(jsonHandler)
+	logger := otelslog.NewLogger(instrumentationScope)
 	slog.SetDefault(logger)
 
-	httpClient := &http.Client{}
-	tClient := api.NewClient(ctx, httpClient)
+	client := &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}
+
+	runClient(ctx, client)
+}
+
+func runClient(ctx context.Context, client *http.Client) {
+	tClient := api.NewClient(ctx, client)
 
 	clientConfig := config.NewClientConfig(ctx)
 	slog.Info("creating client", "config", clientConfig)
 
 	toSendCh := make(chan commons.EnqueueTransactionRequest, clientConfig.ToSend)
-
 	for i := 0; i < clientConfig.ToSend; i++ {
 		req := commons.EnqueueTransactionRequest{
 			Host:    clientConfig.DummyHost,
@@ -45,12 +62,10 @@ func main() {
 	close(toSendCh)
 
 	wg := sync.WaitGroup{}
-
 	for i := 0; i < clientConfig.WorkerCount; i++ {
 		wg.Add(1)
 		go sendAll(ctx, &wg, tClient, toSendCh)
 	}
-
 	wg.Wait()
 }
 
@@ -64,14 +79,19 @@ func sendAll(ctx context.Context, wg *sync.WaitGroup, tClient api.Client, toSend
 			if !ok {
 				return
 			}
-			i := 0.0
-			for err := tClient.EnqueueTransaction(ctx, req); err != nil; {
-				i := min(i, 5.0)
-				sendAfter := 2 * time.Duration(math.Pow(2, i)) * 100 * time.Millisecond
-				slog.Warn("failed to send transaction", "err", err, "payload", req.Payload, "re-sending after", sendAfter.String())
-				time.Sleep(sendAfter)
-				i++
+			operation := func() (struct{}, error) {
+				return struct{}{}, tClient.EnqueueTransaction(ctx, req)
+			}
+
+			_, err := backoff.Retry(ctx, operation, backoff.WithBackOff(backoff.NewExponentialBackOff()), backoff.WithMaxTries(5))
+			if err != nil {
+				slog.Error("Failed to enqueue transaction", "err", err)
 			}
 		}
 	}
 }
+
+const (
+	instrumentationScope = "github.com/mat-sik/sql-distributed-transactions/client"
+	serviceName          = "client"
+)
