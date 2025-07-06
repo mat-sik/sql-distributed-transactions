@@ -6,6 +6,7 @@ import (
 )
 
 type Server struct {
+	Port      int `env:"DUMMY_PORT, default=40691"`
 	ToReceive int `env:"DUMMY_TO_RECEIVE, default=100_000"`
 }
 
