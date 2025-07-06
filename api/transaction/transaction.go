@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/mat-sik/sql-distributed-transactions/api/internal/config"
 	commons "github.com/mat-sik/sql-distributed-transactions/common/transaction"
-	"log/slog"
 	"net/http"
 )
 
@@ -24,8 +23,6 @@ func NewClient(ctx context.Context, client *http.Client) Client {
 }
 
 func (c Client) EnqueueTransaction(ctx context.Context, enqueueReq commons.EnqueueTransactionRequest) error {
-	slog.Debug("enqueueing transaction", "transaction payload", enqueueReq.Payload)
-
 	body, err := json.Marshal(enqueueReq)
 	if err != nil {
 		return err
