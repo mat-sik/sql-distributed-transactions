@@ -1,19 +1,22 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/config"
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/transaction"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
+	"net"
 	"net/http"
 	"time"
 )
 
-func NewServer(serverConfig config.Server, handler http.Handler) http.Server {
+func NewServer(ctx context.Context, serverConfig config.Server, handler http.Handler) http.Server {
 	return http.Server{
 		Addr:         fmt.Sprintf(":%d", serverConfig.Port),
+		BaseContext:  func(_ net.Listener) context.Context { return ctx },
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 		IdleTimeout:  5 * time.Minute,
@@ -21,23 +24,18 @@ func NewServer(serverConfig config.Server, handler http.Handler) http.Server {
 	}
 }
 
-func NewHandler(pool *sql.DB) http.Handler {
-	prometheus.MustRegister(inFlightGauge, duration, counter)
-
+func NewHandler(tracer trace.Tracer, pool *sql.DB) http.Handler {
 	mux := http.NewServeMux()
-	transactionHandler := transaction.NewHandler(pool)
 
-	mux.Handle("GET /metrics", promhttp.Handler())
+	handleFunc := func(pattern string, handler http.Handler) {
+		handler = otelhttp.WithRouteTag(pattern, handler)
+		mux.Handle(pattern, handler)
+	}
 
-	mux.Handle("POST /transactions/enqueue",
-		promhttp.InstrumentHandlerInFlight(inFlightGauge,
-			promhttp.InstrumentHandlerDuration(duration,
-				promhttp.InstrumentHandlerCounter(counter,
-					transactionHandler,
-				),
-			),
-		),
-	)
+	transactionHandler := transaction.NewHandler(tracer, pool)
 
-	return mux
+	handleFunc("POST /transactions/enqueue", transactionHandler)
+
+	handler := otelhttp.NewHandler(mux, "/")
+	return handler
 }

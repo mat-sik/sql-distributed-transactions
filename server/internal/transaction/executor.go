@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/config"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 	"log/slog"
 	"math"
 	"net/http"
@@ -14,13 +16,17 @@ import (
 )
 
 type Executor struct {
+	tracer       trace.Tracer
+	meter        metric.Meter
 	pool         *sql.DB
 	remoteClient remoteClient
 	config       config.Executor
 }
 
-func NewExecutor(pool *sql.DB, client *http.Client, config config.Executor) Executor {
+func NewExecutor(tracer trace.Tracer, meter metric.Meter, pool *sql.DB, client *http.Client, config config.Executor) Executor {
 	return Executor{
+		tracer:       tracer,
+		meter:        meter,
 		pool:         pool,
 		remoteClient: remoteClient{client: client},
 		config:       config,

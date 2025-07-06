@@ -12,8 +12,6 @@ import (
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/trace"
 	"log/slog"
 	"net/http"
 	"os"
@@ -73,7 +71,7 @@ func main() {
 
 	go func() {
 		slog.Info("starting the executor", "config", executorConfig)
-		e := transaction.NewExecutor(pool, client, executorConfig)
+		e := transaction.NewExecutor(tracer, meter, pool, client, executorConfig)
 		e.Start(ctx)
 	}()
 
@@ -83,7 +81,29 @@ func main() {
 		return
 	}
 
-	runServer(ctx, tracer, meter, serverConfig, pool)
+	handler := server.NewHandler(tracer, pool)
+	srv := server.NewServer(ctx, serverConfig, handler)
+
+	serverErrCh := make(chan error)
+	go func() {
+		slog.Info("starting the server", "config", serverConfig)
+		serverErrCh <- srv.ListenAndServe()
+	}()
+
+	select {
+	case err = <-serverErrCh:
+		slog.Error("Received server error", "err", err)
+	case <-ctx.Done():
+		slog.Info("Shutting down server...")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		err = srv.Shutdown(shutdownCtx)
+		if err != nil {
+			slog.Error("Server shutdown failed", "err", err)
+		}
+		slog.Info("Server shutdown complete")
+	}
 }
 
 func newDBPool(ctx context.Context, databaseConfig config.Database) (*sql.DB, error) {
@@ -97,32 +117,6 @@ func newDBPool(ctx context.Context, databaseConfig config.Database) (*sql.DB, er
 	}
 
 	return pool, nil
-}
-
-func runServer(ctx context.Context, tracer trace.Tracer, meter metric.Meter, serverConfig config.Server, pool *sql.DB) {
-	handler := server.NewHandler(pool)
-	srv := server.NewServer(serverConfig, handler)
-
-	serverErrCh := make(chan error)
-	go func() {
-		slog.Info("starting the server", "config", serverConfig)
-		serverErrCh <- srv.ListenAndServe()
-	}()
-
-	select {
-	case err := <-serverErrCh:
-		slog.Error("Received server error", "err", err)
-	case <-ctx.Done():
-		slog.Info("Shutting down server...")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		err := srv.Shutdown(shutdownCtx)
-		if err != nil {
-			slog.Error("Server shutdown failed", "err", err)
-		}
-		slog.Info("Server shutdown complete")
-	}
 }
 
 const (
