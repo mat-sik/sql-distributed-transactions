@@ -10,6 +10,10 @@ import (
 	commons "github.com/mat-sik/sql-distributed-transactions/common/transaction"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"log/slog"
 	"net/http"
 	"os"
@@ -38,6 +42,8 @@ func main() {
 		}
 	}()
 
+	tracer := otel.Tracer(instrumentationScope)
+
 	logger := otelslog.NewLogger(instrumentationScope)
 	slog.SetDefault(logger)
 
@@ -51,10 +57,10 @@ func main() {
 		return
 	}
 
-	runClient(ctx, clientConfig, client)
+	runClient(ctx, tracer, clientConfig, client)
 }
 
-func runClient(ctx context.Context, clientConfig config.Client, client *http.Client) {
+func runClient(ctx context.Context, tracer trace.Tracer, clientConfig config.Client, client *http.Client) {
 	tClient := api.NewClient(ctx, client)
 	slog.Info("creating client", "config", clientConfig)
 
@@ -73,12 +79,12 @@ func runClient(ctx context.Context, clientConfig config.Client, client *http.Cli
 	wg := sync.WaitGroup{}
 	for i := 0; i < clientConfig.WorkerCount; i++ {
 		wg.Add(1)
-		go sendAll(ctx, &wg, tClient, toSendCh)
+		go sendAll(ctx, tracer, &wg, tClient, toSendCh)
 	}
 	wg.Wait()
 }
 
-func sendAll(ctx context.Context, wg *sync.WaitGroup, tClient api.Client, toSendCh chan commons.EnqueueTransactionRequest) {
+func sendAll(ctx context.Context, tracer trace.Tracer, wg *sync.WaitGroup, tClient api.Client, toSendCh chan commons.EnqueueTransactionRequest) {
 	defer wg.Done()
 	for {
 		select {
@@ -88,15 +94,29 @@ func sendAll(ctx context.Context, wg *sync.WaitGroup, tClient api.Client, toSend
 			if !ok {
 				return
 			}
-			operation := func() (struct{}, error) {
-				return struct{}{}, tClient.EnqueueTransaction(ctx, req)
-			}
-
-			_, err := backoff.Retry(ctx, operation, backoff.WithBackOff(backoff.NewExponentialBackOff()), backoff.WithMaxTries(5))
-			if err != nil {
-				slog.Error("Failed to enqueue transaction", "err", err)
-			}
+			send(ctx, tracer, tClient, req)
 		}
+	}
+}
+
+func send(ctx context.Context, tracer trace.Tracer, tClient api.Client, req commons.EnqueueTransactionRequest) {
+	ctx, span := tracer.Start(ctx, "send")
+	defer span.End()
+
+	operation := func() (struct{}, error) {
+		return struct{}{}, tClient.EnqueueTransaction(ctx, req)
+	}
+
+	span.AddEvent("Trying to send transaction request", trace.WithAttributes(
+		attribute.String("transaction request payload", req.Payload),
+	))
+
+	_, err := backoff.Retry(ctx, operation, backoff.WithBackOff(backoff.NewExponentialBackOff()), backoff.WithMaxTries(5))
+	if err != nil {
+		span.SetStatus(codes.Error, "Failed to enqueue transaction")
+		span.RecordError(err, trace.WithAttributes(
+			attribute.String("request payload", req.Payload),
+		))
 	}
 }
 
