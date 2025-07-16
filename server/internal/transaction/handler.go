@@ -4,9 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"go.opentelemetry.io/otel"
+	"github.com/mat-sik/sql-distributed-transactions/server/internal/tracing"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"strings"
@@ -49,10 +48,7 @@ func (h EnqueueTransactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	carrier := propagation.MapCarrier{}
-	otel.GetTextMapPropagator().Inject(ctx, carrier)
-
-	carrierJSON, err := json.Marshal(carrier)
+	carrierJSON, err := tracing.MarshalContext(ctx)
 	if err != nil {
 		span.SetStatus(codes.Error, "Failed to marshal the trace context")
 		span.RecordError(err)
@@ -68,7 +64,7 @@ func (h EnqueueTransactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 			String: req.Payload,
 			Valid:  req.Payload != "",
 		},
-		carrierJSON: string(carrierJSON),
+		carrierJSON: carrierJSON,
 	}
 
 	span.AddEvent("Trying to enqueue the transaction")

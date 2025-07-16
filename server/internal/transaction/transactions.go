@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/logging"
-	"log/slog"
 )
 
 func CreateTransactionsTableIfNotExist(ctx context.Context, pool *sql.DB) error {
@@ -60,14 +59,10 @@ func fetchLockedTransactions(ctx context.Context, tx *sql.Tx, batchSize int) ([]
 		return nil, err
 	}
 
-	slog.Debug("fetched n transactions", "n", len(transactions))
-
 	return transactions, nil
 }
 
 func updateLockedTransactionState(ctx context.Context, tx *sql.Tx, id int, state state) error {
-	slog.Debug("updating transaction state", "id", id, "state", state)
-
 	query := `
 		UPDATE transactions SET state = $2 WHERE id = $1
 	`
