@@ -243,29 +243,15 @@ func (e workerExecutor) handleTransaction(ctx context.Context, t transaction) (t
 		return transactionResponse{}, err
 	}
 
-	spanLinkOption := trace.WithLinks(
-		trace.Link{
-			SpanContext: trace.SpanContextFromContext(ctx),
-		},
-	)
-
-	return e.handleTransactionWithPropagatedContext(storedCtx, spanLinkOption, t)
-}
-
-func (e workerExecutor) handleTransactionWithPropagatedContext(
-	ctx context.Context,
-	option trace.SpanStartOption,
-	t transaction,
-) (transactionResponse, error) {
-	ctx, span := e.tracer.Start(ctx, "handleTransactionWithPropagatedContext", option)
-	defer span.End()
+	spanLinkOption := trace.WithLinks(trace.LinkFromContext(ctx))
 
 	span.AddEvent("Trying to execute a remote transaction", trace.WithAttributes(
 		attribute.Int("transaction id", t.ID),
 	))
-	resp, err := e.tryExecRemoteTransaction(ctx, t)
+	resp, err := e.tryExecRemoteTransaction(storedCtx, spanLinkOption, t)
 	if err != nil {
-		return transactionResponse{}, err
+		span.SetStatus(codes.Error, "Failed to execute the transaction")
+		span.RecordError(err)
 	}
 	span.AddEvent("Executed the remote transaction", trace.WithAttributes(
 		attribute.Int("response status", resp.StatusCode),
@@ -282,11 +268,29 @@ func (e workerExecutor) handleTransactionWithPropagatedContext(
 	return tResp, nil
 }
 
-func (e workerExecutor) tryExecRemoteTransaction(ctx context.Context, t transaction) (*http.Response, error) {
+func (e workerExecutor) tryExecRemoteTransaction(ctx context.Context, option trace.SpanStartOption, t transaction) (*http.Response, error) {
+	ctx, span := e.tracer.Start(ctx, "tryExecRemoteTransaction", option)
+	defer span.End()
+
+	span.AddEvent("Trying to execute a remote transaction", trace.WithAttributes(
+		attribute.Int("transaction id", t.ID),
+	))
+
 	operation := func() (*http.Response, error) {
 		return e.remoteClient.tryExecRemoteTransaction(ctx, t)
 	}
-	return backoff.Retry(ctx, operation, backoff.WithBackOff(backoff.NewExponentialBackOff()))
+	resp, err := backoff.Retry(ctx, operation, backoff.WithBackOff(backoff.NewExponentialBackOff()))
+	if err != nil {
+		span.SetStatus(codes.Error, "Failed to execute the transaction")
+		span.RecordError(err)
+		return nil, err
+	}
+
+	span.AddEvent("Executed the remote transaction", trace.WithAttributes(
+		attribute.Int("response status", resp.StatusCode),
+	))
+
+	return resp, err
 }
 
 func (e workerExecutor) updateTransactionState(ctx context.Context, tx *sql.Tx, tResp transactionResponse) error {
