@@ -97,6 +97,7 @@ services:
       /usr/bin/mc alias set dockerminio http://minio:9000 minioroot minioroot;
       /usr/bin/mc mb dockerminio/loki;
       /usr/bin/mc mb dockerminio/mimir-blocks;
+      /usr/bin/mc mb dockerminio/tempo;
       exit 0;
       "
 
