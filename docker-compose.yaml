@@ -47,9 +47,13 @@ services:
     networks:
       - net
     volumes:
-      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ./prometheus.yaml:/etc/prometheus.yaml
       - prometheus-data:/prometheus
-    command: [ "--web.enable-remote-write-receiver", "--config.file=/etc/prometheus/prometheus.yaml" ]
+    command:
+      - --config.file=/etc/prometheus.yaml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --enable-feature=native-histograms
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.128.0
