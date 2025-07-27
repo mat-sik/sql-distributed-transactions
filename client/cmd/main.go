@@ -64,7 +64,15 @@ func runClient(ctx context.Context, tracer trace.Tracer, clientConfig config.Cli
 	tClient := api.NewClient(ctx, client)
 	slog.Info("creating client", "config", clientConfig)
 
-	toSendCh := make(chan commons.EnqueueTransactionRequest, clientConfig.ToSend)
+	chSize := min(clientConfig.ToSend, maxChannelSize)
+	toSendCh := make(chan commons.EnqueueTransactionRequest, chSize)
+
+	wg := sync.WaitGroup{}
+	for i := 0; i < clientConfig.WorkerCount; i++ {
+		wg.Add(1)
+		go sendAll(ctx, tracer, &wg, tClient, toSendCh)
+	}
+
 	for i := 0; i < clientConfig.ToSend; i++ {
 		req := commons.EnqueueTransactionRequest{
 			Host:    clientConfig.DummyHost,
@@ -76,11 +84,6 @@ func runClient(ctx context.Context, tracer trace.Tracer, clientConfig config.Cli
 	}
 	close(toSendCh)
 
-	wg := sync.WaitGroup{}
-	for i := 0; i < clientConfig.WorkerCount; i++ {
-		wg.Add(1)
-		go sendAll(ctx, tracer, &wg, tClient, toSendCh)
-	}
 	wg.Wait()
 }
 
@@ -123,4 +126,5 @@ func send(ctx context.Context, tracer trace.Tracer, tClient api.Client, req comm
 const (
 	instrumentationScope = "github.com/mat-sik/sql-distributed-transactions/client"
 	serviceName          = "client"
+	maxChannelSize       = 10_240
 )
