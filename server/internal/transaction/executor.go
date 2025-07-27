@@ -125,19 +125,20 @@ func (e workerExecutor) tryExecRemoteTransactions(ctx context.Context, tx *sql.T
 	ctx, span := e.tracer.Start(ctx, "tryExecRemoteTransactions")
 	defer span.End()
 
-	toSendCh := make(chan transaction, len(transactions))
-	for _, t := range transactions {
-		toSendCh <- t
-	}
-	close(toSendCh)
+	chSize := min(len(transactions), maxChannelSize)
+	toSendCh := make(chan transaction, chSize)
 
 	wg := &sync.WaitGroup{}
-	responsesCh := make(chan transactionResponse, len(transactions))
+	responsesCh := make(chan transactionResponse, chSize)
 	for i := 0; i < e.config.SenderAmount; i++ {
 		wg.Add(1)
 		go e.execSender(ctx, wg, toSendCh, responsesCh)
 	}
-	wg.Wait()
+
+	wg.Add(1)
+	go e.produceTransactions(ctx, wg, toSendCh, transactions)
+
+	defer wg.Wait()
 
 	executedCount := 0
 	var err error
@@ -162,6 +163,27 @@ func (e workerExecutor) tryExecRemoteTransactions(ctx context.Context, tx *sql.T
 		}
 	}
 	return nil
+}
+
+func (e workerExecutor) produceTransactions(ctx context.Context, wg *sync.WaitGroup, toSendCh chan<- transaction, transactions []transaction) {
+	ctx, span := e.tracer.Start(ctx, "produceTransactions")
+	defer func() {
+		close(toSendCh)
+		span.End()
+		wg.Done()
+	}()
+
+	for i, t := range transactions {
+		select {
+		case <-ctx.Done():
+			err := errors.New("failed to produce all transactions for the sender")
+			span.SetStatus(codes.Error, "Failed to produce all transactions for the sender")
+			span.RecordError(err, trace.WithAttributes(
+				attribute.Int("produced count", i+1),
+			))
+		case toSendCh <- t:
+		}
+	}
 }
 
 func (e workerExecutor) handleTransactionResponse(ctx context.Context, tx *sql.Tx, tResp transactionResponse, executedCount int) (int, error) {
@@ -202,9 +224,10 @@ func (e workerExecutor) execSender(
 	responsesCh chan<- transactionResponse,
 ) {
 	ctx, span := e.tracer.Start(ctx, "execSender")
-	defer span.End()
-
-	defer wg.Done()
+	defer func() {
+		span.End()
+		wg.Done()
+	}()
 
 	for {
 		select {
@@ -337,3 +360,5 @@ func handleTransactionFinalization(tx *sql.Tx, err error) error {
 	}
 	return err
 }
+
+const maxChannelSize = 10_240
