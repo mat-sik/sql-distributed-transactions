@@ -80,7 +80,12 @@ func runClient(ctx context.Context, tracer trace.Tracer, clientConfig config.Cli
 			Method:  "POST",
 			Payload: fmt.Sprintf(`{"iteration": %d}`, i),
 		}
-		toSendCh <- req
+		select {
+		case <-ctx.Done():
+			close(toSendCh)
+			return
+		case toSendCh <- req:
+		}
 	}
 	close(toSendCh)
 
