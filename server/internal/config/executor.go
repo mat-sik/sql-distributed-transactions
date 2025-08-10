@@ -13,11 +13,11 @@ type Executor struct {
 	SenderAmount               int           `env:"SERVER_EXECUTOR_SENDER_AMOUNT, default=2"`
 }
 
-func NewExecutorConfig(ctx context.Context) Executor {
+func NewExecutorConfig(ctx context.Context) (Executor, error) {
 	var config Executor
 	if err := envconfig.Process(ctx, &config); err != nil {
-		panic(err)
+		return config, err
 	}
 
-	return config
+	return config, nil
 }

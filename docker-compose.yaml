@@ -40,6 +40,43 @@ services:
     volumes:
       - coordinator-db-data:/var/lib/postgresql/data
 
+  prometheus:
+    image: prom/prometheus:v3.4.1
+    ports:
+      - "9090:9090"
+    networks:
+      - net
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus.yaml
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus.yaml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --enable-feature=native-histograms
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.128.0
+    ports:
+      - "4317:4317"
+    networks:
+      - net
+    volumes:
+      - ./otel-collector.yaml:/etc/otel-collector.yaml
+    command: [ "--config=/etc/otel-collector.yaml" ]
+
+  tempo:
+    image: grafana/tempo:2.8.1
+    ports:
+      - "3200:3200"
+    networks:
+      - net
+    user: root
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+      - tempo-data:/var/tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+
   minio:
     image: minio/minio:RELEASE.2025-05-24T17-08-30Z
     ports:
@@ -64,6 +101,7 @@ services:
       /usr/bin/mc alias set dockerminio http://minio:9000 minioroot minioroot;
       /usr/bin/mc mb dockerminio/loki;
       /usr/bin/mc mb dockerminio/mimir-blocks;
+      /usr/bin/mc mb dockerminio/tempo;
       exit 0;
       "
 
@@ -100,17 +138,6 @@ services:
       - loki-wal-data:/loki/wal
     command: [ "-config.file=/etc/loki/loki.yaml" ]
 
-  prometheus:
-    image: prom/prometheus:v3.4.1
-    ports:
-      - "9090:9090"
-    networks:
-      - net
-    volumes:
-      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml
-      - prometheus-data:/prometheus
-    command: [ "--web.enable-remote-write-receiver", "--config.file=/etc/prometheus/prometheus.yaml" ]
-
   grafana:
     image: grafana/grafana:12.0.1
     ports:
@@ -118,36 +145,10 @@ services:
     networks:
       - net
     environment:
-      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
       GF_AUTH_ANONYMOUS_ENABLED: true
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
-    entrypoint:
-      - sh
-      - -euc
-      - |
-        mkdir -p /etc/grafana/provisioning/datasources
-        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
-        apiVersion: 1
-        datasources:
-        - name: Loki
-          type: loki
-          access: proxy
-          orgId: 1
-          url: http://loki:3100
-          basicAuth: false
-          isDefault: false
-          version: 1
-          editable: false
-        - name: Prometheus
-          type: prometheus
-          orgId: 1
-          url: http://mimir:9009/prometheus
-          basicAuth: false
-          isDefault: true
-          version: 1
-          editable: false
-        EOF
-        /run.sh
+    volumes:
+      - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
 
 volumes:
   coordinator-db-data:
@@ -155,6 +156,7 @@ volumes:
   loki-wal-data:
   prometheus-data:
   mimir-data:
+  tempo-data:
 
 networks:
   net:

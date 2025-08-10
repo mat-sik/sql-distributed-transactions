@@ -11,11 +11,11 @@ type Client struct {
 	WorkerCount int    `env:"CLIENT_WORKER_COUNT, default=2"`
 }
 
-func NewClientConfig(ctx context.Context) Client {
+func NewClientConfig(ctx context.Context) (Client, error) {
 	var config Client
 	if err := envconfig.Process(ctx, &config); err != nil {
-		panic(err)
+		return config, err
 	}
 
-	return config
+	return config, nil
 }
