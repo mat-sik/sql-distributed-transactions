@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/tracing"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"strings"
@@ -35,24 +34,18 @@ func (h EnqueueTransactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 	var req commons.EnqueueTransactionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		span.SetStatus(codes.Error, "Failed to unmarshal the request body")
-		span.RecordError(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		handleErr(span, w, err, http.StatusInternalServerError, "Failed to unmarshal the request body")
 		return
 	}
 
 	if err := commons.ValidRequest(req); err != nil {
-		span.SetStatus(codes.Error, "Failed to validate the request")
-		span.RecordError(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		handleErr(span, w, err, http.StatusInternalServerError, "Failed to validate the request")
 		return
 	}
 
 	carrierJSON, err := tracing.MarshalContext(ctx)
 	if err != nil {
-		span.SetStatus(codes.Error, "Failed to marshal the trace context")
-		span.RecordError(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleErr(span, w, err, http.StatusInternalServerError, "Failed to marshal the trace context")
 		return
 	}
 
@@ -69,11 +62,14 @@ func (h EnqueueTransactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 	span.AddEvent("Trying to enqueue the transaction")
 	if err = h.repository.enqueueTransaction(ctx, createT); err != nil {
-		span.SetStatus(codes.Error, "Failed to enqueue the transaction")
-		span.RecordError(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleErr(span, w, err, http.StatusInternalServerError, "Failed to enqueue the transaction")
 		return
 	}
 
 	span.AddEvent("Enqueued the transaction")
+}
+
+func handleErr(span trace.Span, w http.ResponseWriter, err error, code int, description string, options ...trace.EventOption) {
+	tracing.RecordErr(span, err, description, options...)
+	http.Error(w, err.Error(), code)
 }

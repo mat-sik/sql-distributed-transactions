@@ -9,7 +9,6 @@ import (
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/tracing"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -89,16 +88,14 @@ func (e workerExecutor) execTransactionBatch(ctx context.Context) (err error) {
 	span.AddEvent("Trying to begin a sql transaction")
 	tx, err := e.repository.beginTx(ctx, nil)
 	if err != nil {
-		span.SetStatus(codes.Error, "Failed to begin a sql transaction")
-		span.RecordError(err)
+		tracing.RecordErr(span, err, "Failed to begin a sql transaction", nil)
 		return err
 	}
 	defer func() {
 		span.AddEvent("Trying to finalize the sql transaction")
 		err = e.repository.finishTx(tx, err)
 		if err != nil {
-			span.SetStatus(codes.Error, "Failed to finalize the sql transaction")
-			span.RecordError(err)
+			tracing.RecordErr(span, err, "Failed to finalize the sql transaction", nil)
 		}
 	}()
 
@@ -109,8 +106,7 @@ func (e workerExecutor) execTransactionBatch(ctx context.Context) (err error) {
 		return nil
 	}
 	if err != nil {
-		span.SetStatus(codes.Error, "Encountered error while fetching the locked transactions")
-		span.RecordError(err)
+		tracing.RecordErr(span, err, "Encountered error while fetching the locked transactions", nil)
 		return err
 	}
 	span.AddEvent("Fetched locked transactions", trace.WithAttributes(
@@ -145,16 +141,14 @@ func (e workerExecutor) tryExecRemoteTransactions(ctx context.Context, tx *sql.T
 		select {
 		case <-ctx.Done():
 			err = errors.New("failed to execute each one of transactions because of the timeout or cancellation")
-			span.SetStatus(codes.Error, "Failed to execute all transactions")
-			span.RecordError(err, trace.WithAttributes(
+			tracing.RecordErr(span, err, "Failed to execute all transactions", trace.WithAttributes(
 				attribute.Int("executed count", executedCount),
 			))
 			return nil
 		case tResp := <-responsesCh:
 			executedCount, err = e.handleTransactionResponse(ctx, tx, tResp, executedCount)
 			if err != nil {
-				span.SetStatus(codes.Error, "Failed to execute all transactions")
-				span.RecordError(err, trace.WithAttributes(
+				tracing.RecordErr(span, err, "Failed to execute all transactions", trace.WithAttributes(
 					attribute.Int("executed count", executedCount),
 				))
 				return err
@@ -176,8 +170,7 @@ func (e workerExecutor) produceTransactions(ctx context.Context, wg *sync.WaitGr
 		select {
 		case <-ctx.Done():
 			err := errors.New("failed to produce all transactions for the sender")
-			span.SetStatus(codes.Error, "Failed to produce all transactions for the sender")
-			span.RecordError(err, trace.WithAttributes(
+			tracing.RecordErr(span, err, "Failed to produce all transactions for the sender", trace.WithAttributes(
 				attribute.Int("produced count", i+1),
 			))
 		case toSendCh <- t:
@@ -201,8 +194,7 @@ func (e workerExecutor) handleTransactionResponse(ctx context.Context, tx *sql.T
 
 	span.AddEvent("Trying to update transaction state")
 	if err := e.updateTransactionState(ctx, tx, tResp); err != nil {
-		span.SetStatus(codes.Error, "Failed to update a transaction state")
-		span.RecordError(err, trace.WithAttributes(
+		tracing.RecordErr(span, err, "Failed to update a transaction state", trace.WithAttributes(
 			attribute.Int("transaction id", tResp.ID),
 			attribute.Int("transaction result status code", tResp.StatusCode),
 		))
@@ -232,8 +224,7 @@ func (e workerExecutor) execSender(
 		select {
 		case <-ctx.Done():
 			err := errors.New("failed to execute every transaction because of the timeout or cancellation")
-			span.SetStatus(codes.Error, "Failed to execute all transactions")
-			span.RecordError(err)
+			tracing.RecordErr(span, err, "Failed to execute all transactions", nil)
 			return
 		case t, ok := <-toSendCh:
 			if !ok {
@@ -243,8 +234,7 @@ func (e workerExecutor) execSender(
 
 			tResp, err := e.handleTransaction(ctx, t)
 			if err != nil {
-				span.SetStatus(codes.Error, "Failed to handle the transaction")
-				span.RecordError(err, trace.WithAttributes(
+				tracing.RecordErr(span, err, "Failed to handle the transaction", trace.WithAttributes(
 					attribute.Int("transaction id", t.ID),
 				))
 				return
@@ -260,8 +250,7 @@ func (e workerExecutor) handleTransaction(ctx context.Context, t transaction) (t
 
 	storedCtx, err := tracing.UnmarshalContext(ctx, t.CarrierJSON)
 	if err != nil {
-		span.SetStatus(codes.Error, "Failed to unmarshal the trace context")
-		span.RecordError(err)
+		tracing.RecordErr(span, err, "Failed to unmarshal the trace context", nil)
 		return transactionResponse{}, err
 	}
 
@@ -272,8 +261,7 @@ func (e workerExecutor) handleTransaction(ctx context.Context, t transaction) (t
 	))
 	resp, err := e.tryExecRemoteTransaction(storedCtx, spanLinkOption, t)
 	if err != nil {
-		span.SetStatus(codes.Error, "Failed to execute the transaction")
-		span.RecordError(err)
+		tracing.RecordErr(span, err, "Failed to execute the transaction", nil)
 	}
 	span.AddEvent("Executed the remote transaction", trace.WithAttributes(
 		attribute.Int("response status", resp.StatusCode),
@@ -303,8 +291,7 @@ func (e workerExecutor) tryExecRemoteTransaction(ctx context.Context, option tra
 	}
 	resp, err := backoff.Retry(ctx, operation, backoff.WithBackOff(backoff.NewExponentialBackOff()))
 	if err != nil {
-		span.SetStatus(codes.Error, "Failed to execute the transaction")
-		span.RecordError(err)
+		tracing.RecordErr(span, err, "Failed to execute the transaction", nil)
 		return nil, err
 	}
 
@@ -330,8 +317,7 @@ func (e workerExecutor) updateTransactionState(ctx context.Context, tx *sql.Tx, 
 
 	err := e.repository.updateLockedTransactionState(ctx, tx, tResp.ID, newState)
 	if err != nil {
-		span.SetStatus(codes.Error, "Failed to update the transaction state")
-		span.RecordError(err)
+		tracing.RecordErr(span, err, "Failed to update the transaction state", nil)
 		return err
 	}
 	return nil

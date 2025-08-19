@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func MarshalContext(ctx context.Context) (string, error) {
@@ -29,12 +28,4 @@ func UnmarshalContext(ctx context.Context, carrierJSON string) (context.Context,
 
 	ctx = otel.GetTextMapPropagator().Extract(ctx, carrier)
 	return ctx, nil
-}
-
-func GetSpanLinkOption(ctx context.Context) trace.SpanStartOption {
-	storedSpanCtx := trace.SpanContextFromContext(ctx)
-
-	return trace.WithLinks(trace.Link{
-		SpanContext: storedSpanCtx,
-	})
 }
