@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/config"
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/transaction"
@@ -24,7 +23,7 @@ func NewServer(ctx context.Context, serverConfig config.Server, handler http.Han
 	}
 }
 
-func NewHandler(tracer trace.Tracer, pool *sql.DB) http.Handler {
+func NewHandler(tracer trace.Tracer, repository transaction.Repository) http.Handler {
 	mux := http.NewServeMux()
 
 	handleFunc := func(pattern string, handler http.Handler) {
@@ -32,7 +31,7 @@ func NewHandler(tracer trace.Tracer, pool *sql.DB) http.Handler {
 		mux.Handle(pattern, handler)
 	}
 
-	transactionHandler := transaction.NewHandler(tracer, pool)
+	transactionHandler := transaction.NewHandler(tracer, repository)
 
 	handleFunc("POST /transactions/enqueue", transactionHandler)
 

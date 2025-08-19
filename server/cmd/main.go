@@ -59,6 +59,8 @@ func main() {
 	}
 	defer logging.LoggedClose(pool)
 
+	repository := transaction.NewSQLRepository(pool)
+
 	client := &http.Client{
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
 	}
@@ -71,7 +73,7 @@ func main() {
 
 	go func() {
 		slog.Info("starting the executor", "config", executorConfig)
-		e := transaction.NewExecutor(tracer, meter, pool, client, executorConfig)
+		e := transaction.NewExecutor(tracer, meter, repository, client, executorConfig)
 		e.Start(ctx)
 	}()
 
@@ -81,7 +83,7 @@ func main() {
 		return
 	}
 
-	handler := server.NewHandler(tracer, pool)
+	handler := server.NewHandler(tracer, repository)
 	srv := server.NewServer(ctx, serverConfig, handler)
 
 	serverErrCh := make(chan error)

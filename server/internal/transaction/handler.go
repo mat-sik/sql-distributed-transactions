@@ -15,14 +15,14 @@ import (
 )
 
 type EnqueueTransactionHandler struct {
-	tracer trace.Tracer
-	pool   *sql.DB
+	tracer     trace.Tracer
+	repository Repository
 }
 
-func NewHandler(tracer trace.Tracer, pool *sql.DB) EnqueueTransactionHandler {
+func NewHandler(tracer trace.Tracer, repository Repository) EnqueueTransactionHandler {
 	return EnqueueTransactionHandler{
-		tracer: tracer,
-		pool:   pool,
+		tracer:     tracer,
+		repository: repository,
 	}
 }
 
@@ -68,7 +68,7 @@ func (h EnqueueTransactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 	}
 
 	span.AddEvent("Trying to enqueue the transaction")
-	if err = enqueueTransaction(ctx, h.pool, createT); err != nil {
+	if err = h.repository.enqueueTransaction(ctx, createT); err != nil {
 		span.SetStatus(codes.Error, "Failed to enqueue the transaction")
 		span.RecordError(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
