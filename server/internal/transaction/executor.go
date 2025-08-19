@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/cenkalti/backoff/v5"
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/config"
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/tracing"
@@ -23,16 +22,16 @@ import (
 type Executor struct {
 	tracer       trace.Tracer
 	meter        metric.Meter
-	pool         *sql.DB
+	repository   Repository
 	remoteClient remoteClient
 	config       config.Executor
 }
 
-func NewExecutor(tracer trace.Tracer, meter metric.Meter, pool *sql.DB, client *http.Client, config config.Executor) Executor {
+func NewExecutor(tracer trace.Tracer, meter metric.Meter, repository Repository, client *http.Client, config config.Executor) Executor {
 	return Executor{
 		tracer:       tracer,
 		meter:        meter,
-		pool:         pool,
+		repository:   repository,
 		remoteClient: remoteClient{client: client},
 		config:       config,
 	}
@@ -49,7 +48,7 @@ func (e Executor) Start(ctx context.Context) {
 			worker := workerExecutor{
 				tracer:       e.tracer,
 				meter:        e.meter,
-				pool:         e.pool,
+				repository:   e.repository,
 				remoteClient: e.remoteClient,
 				config:       e.config,
 			}
@@ -62,7 +61,7 @@ func (e Executor) Start(ctx context.Context) {
 type workerExecutor struct {
 	tracer       trace.Tracer
 	meter        metric.Meter
-	pool         *sql.DB
+	repository   Repository
 	remoteClient remoteClient
 	config       config.Executor
 }
@@ -88,7 +87,7 @@ func (e workerExecutor) execTransactionBatch(ctx context.Context) (err error) {
 	defer span.End()
 
 	span.AddEvent("Trying to begin a sql transaction")
-	tx, err := e.pool.BeginTx(ctx, nil)
+	tx, err := e.repository.beginTx(ctx, nil)
 	if err != nil {
 		span.SetStatus(codes.Error, "Failed to begin a sql transaction")
 		span.RecordError(err)
@@ -96,7 +95,7 @@ func (e workerExecutor) execTransactionBatch(ctx context.Context) (err error) {
 	}
 	defer func() {
 		span.AddEvent("Trying to finalize the sql transaction")
-		err = handleTransactionFinalization(tx, err)
+		err = e.repository.finishTx(tx, err)
 		if err != nil {
 			span.SetStatus(codes.Error, "Failed to finalize the sql transaction")
 			span.RecordError(err)
@@ -104,7 +103,7 @@ func (e workerExecutor) execTransactionBatch(ctx context.Context) (err error) {
 	}()
 
 	span.AddEvent("Trying to fetch locked transactions")
-	transactions, err := fetchLockedTransactions(ctx, tx, e.config.BatchSize)
+	transactions, err := e.repository.fetchLockedTransactions(ctx, tx, e.config.BatchSize)
 	if errors.Is(err, sql.ErrNoRows) {
 		span.RecordError(err)
 		return nil
@@ -329,7 +328,7 @@ func (e workerExecutor) updateTransactionState(ctx context.Context, tx *sql.Tx, 
 		attribute.String("new state", string(newState)),
 	))
 
-	err := updateLockedTransactionState(ctx, tx, tResp.ID, newState)
+	err := e.repository.updateLockedTransactionState(ctx, tx, tResp.ID, newState)
 	if err != nil {
 		span.SetStatus(codes.Error, "Failed to update the transaction state")
 		span.RecordError(err)
@@ -342,23 +341,6 @@ type transactionResponse struct {
 	ID         int
 	StatusCode int
 	carrier    propagation.MapCarrier
-}
-
-func handleTransactionFinalization(tx *sql.Tx, err error) error {
-	var txFinalizeErr error
-	if p := recover(); p != nil {
-		txFinalizeErr = tx.Rollback()
-	} else if err != nil {
-		txFinalizeErr = tx.Rollback()
-	} else {
-		txFinalizeErr = tx.Commit()
-	}
-	if err != nil && txFinalizeErr != nil {
-		return fmt.Errorf("%v: %w", txFinalizeErr, err)
-	} else if txFinalizeErr != nil {
-		return txFinalizeErr
-	}
-	return err
 }
 
 const maxChannelSize = 10_240
