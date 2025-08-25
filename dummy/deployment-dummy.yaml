@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dummy
+spec:
+  selector:
+    app: dummy
+  ports:
+    - protocol: TCP
+      port: 40691
+      targetPort: 40691
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dummy-configmap
+data:
+  dummy-port: "40691"
+  dummy-to-receive: "100_000"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dummy
+  labels:
+    app: dummy
+spec:
+  selector:
+    matchLabels:
+      app: dummy
+  replicas: 1
+  minReadySeconds: 10
+  template:
+    metadata:
+      labels:
+        app: dummy
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: dummy
+          image: dummy:latest
+          env:
+            - name: DUMMY_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: dummy-configmap
+                  key: dummy-port
+            - name: DUMMY_TO_RECEIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: dummy-configmap
+                  key: dummy-to-receive
+            - name: OTEL_COLLECTOR_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: otel-configmap
+                  key: otel-collector-host
+          ports:
+            - containerPort: 40691
