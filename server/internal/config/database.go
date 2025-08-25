@@ -6,7 +6,7 @@ import (
 )
 
 type Database struct {
-	URL string `env:"COORDINATOR_DB_URL, default=postgres://postgres:postgres@localhost:5432/coordinator"`
+	URL string `env:"SERVER_PSQL_URL, default=postgres://postgres:postgres@localhost:5432/coordinator"`
 }
 
 func NewDatabaseConfig(ctx context.Context) (Database, error) {

@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+spec:
+  selector:
+    app: server
+  ports:
+    - protocol: TCP
+      port: 40690
+      targetPort: 40690
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: server-configmap
+data:
+  server-port: "40690"
+  server-executor-transaction-interval: "1s"
+  server-executor-worker-amount: "2"
+  server-executor-batch-size: "400"
+  server-executor-sender-amount: "2"
+  server-psql-url: "postgres://postgres:postgres@server-psql-0:5432/coordinator"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+  labels:
+    app: server
+spec:
+  selector:
+    matchLabels:
+      app: server
+  replicas: 1
+  minReadySeconds: 10
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: server
+          image: server:latest
+          env:
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: server-configmap
+                  key: server-port
+            - name: SERVER_EXECUTOR_TRANSACTION_INTERVAL
+              valueFrom:
+                configMapKeyRef:
+                  name: server-configmap
+                  key: server-executor-transaction-interval
+            - name: SERVER_EXECUTOR_WORKER_AMOUNT
+              valueFrom:
+                configMapKeyRef:
+                  name: server-configmap
+                  key: server-executor-worker-amount
+            - name: SERVER_EXECUTOR_BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: server-configmap
+                  key: server-executor-batch-size
+            - name: SERVER_EXECUTOR_SENDER_AMOUNT
+              valueFrom:
+                configMapKeyRef:
+                  name: server-configmap
+                  key: server-executor-sender-amount
+            - name: SERVER_PSQL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: server-configmap
+                  key: server-psql-url
+            - name: OTEL_COLLECTOR_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: otel-configmap
+                  key: otel-collector-host
+          ports:
+            - containerPort: 40690
