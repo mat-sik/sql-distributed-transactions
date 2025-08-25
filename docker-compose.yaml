@@ -21,7 +21,7 @@ services:
     networks:
       - net
     environment:
-      COORDINATOR_DB_URL: postgres://postgres:postgres@coordinator-db:5432/coordinator
+      SERVER_PSQL_URL: postgres://postgres:postgres@coordinator-db:5432/coordinator
       SERVER_EXECUTOR_TRANSACTION_INTERVAL: 5s
       SERVER_EXECUTOR_WORKER_AMOUNT: 2
       SERVER_EXECUTOR_BATCH_SIZE: 1000
