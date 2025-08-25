@@ -15,6 +15,8 @@ kind: ConfigMap
 metadata:
   name: client-configmap
 data:
+  server-url: "http://server:40690"
+  dummy-host: "dummy:40691"
   client-to-send-per-replica: "100_000"
   client-worker-count: "2"
 ---
@@ -41,11 +43,16 @@ spec:
           image: client:latest
           imagePullPolicy: IfNotPresent
           env:
-            - name: DUMMY_PORT
+            - name: SERVER_URL
               valueFrom:
                 configMapKeyRef:
-                  name: dummy-configmap
-                  key: dummy-port
+                  name: client-configmap
+                  key: server-url
+            - name: DUMMY_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: client-configmap
+                  key: dummy-host
             - name: CLIENT_TO_SEND
               valueFrom:
                 configMapKeyRef:
