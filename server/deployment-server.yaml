@@ -43,6 +43,7 @@ spec:
       containers:
         - name: server
           image: server:latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: SERVER_PORT
               valueFrom:

@@ -39,6 +39,7 @@ spec:
       containers:
         - name: dummy
           image: dummy:latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: DUMMY_PORT
               valueFrom:

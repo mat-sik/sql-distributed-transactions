@@ -39,6 +39,7 @@ spec:
       containers:
         - name: client
           image: client:latest
+          imagePullPolicy: IfNotPresent
           env:
             - name: DUMMY_PORT
               valueFrom:
