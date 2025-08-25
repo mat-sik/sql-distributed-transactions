@@ -12,3 +12,19 @@ sudo mkdir -p /mnt/data/server-psql
 sudo chown 999:999 /mnt/data/server-psql
 sudo chmod 700 /mnt/data/server-psql
 ```
+
+# PostgreSQL accessible on localhost
+
+```bash
+minikube kubectl -- port-forward service/server-psql 5432:5432
+```
+
+# Create images for minikube from host docker
+
+```bash
+eval $(minikube docker-env)
+```
+
+```bash
+eval $(minikube docker-env -u)
+```
