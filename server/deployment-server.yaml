@@ -20,7 +20,7 @@ data:
   server-executor-worker-amount: "2"
   server-executor-batch-size: "400"
   server-executor-sender-amount: "2"
-  server-psql-url: "postgres://postgres:postgres@server-psql-0:5432/coordinator"
+  server-psql-url: "postgres://postgres:postgres@server-psql-0.server-psql:5432/coordinator"
 ---
 apiVersion: apps/v1
 kind: Deployment
