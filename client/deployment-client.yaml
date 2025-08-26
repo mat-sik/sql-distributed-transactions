@@ -20,24 +20,14 @@ data:
   client-to-send-per-replica: "100_000"
   client-worker-count: "2"
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: client
-  labels:
-    app: client
 spec:
-  selector:
-    matchLabels:
-      app: client
-  replicas: 1
-  minReadySeconds: 10
   template:
-    metadata:
-      labels:
-        app: client
     spec:
-      terminationGracePeriodSeconds: 10
+      restartPolicy: OnFailure
       containers:
         - name: client
           image: client:latest
