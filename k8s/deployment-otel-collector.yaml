@@ -6,9 +6,21 @@ spec:
   selector:
     app: otel-collector
   ports:
-    - protocol: TCP
+    - name: oltp-grpc
+      protocol: TCP
       port: 4317
       targetPort: 4317
+    - name: prometheus-metrics
+      protocol: TCP
+      port: 9090
+      targetPort: 9090
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-configmap
+data:
+  otel-collector-host: "otel-collector:4317"
 ---
 apiVersion: apps/v1
 kind: Deployment

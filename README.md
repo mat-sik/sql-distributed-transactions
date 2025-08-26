@@ -6,11 +6,16 @@ minikube start
 
 ```bash
 sudo mkdir -p /mnt/data/server-psql
-```
-
-```bash
 sudo chown 999:999 /mnt/data/server-psql
 sudo chmod 700 /mnt/data/server-psql
+```
+
+# Prometheus Local PersistentVolume Setup in Minikube
+
+```bash
+sudo mkdir -p /mnt/data/prometheus
+sudo chown 65534:65534 /mnt/data/prometheus
+sudo chmod 700 /mnt/data/prometheus
 ```
 
 # PostgreSQL accessible on localhost
@@ -34,4 +39,11 @@ eval $(minikube docker-env -u)
 ```bash
 minikube kubectl -- create configmap otel-collector-config-yaml-configmap \
   --from-file=config.yaml=./otel-collector.yaml
+```
+
+# Create configmap with a config file for prometheus
+
+```bash
+minikube kubectl -- create configmap prometheus-config-yaml-configmap \
+  --from-file=prometheus.yaml=./prometheus.yaml
 ```
