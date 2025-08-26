@@ -18,6 +18,13 @@ sudo chown 65534:65534 /mnt/data/prometheus
 sudo chmod 700 /mnt/data/prometheus
 ```
 
+# Minio Local PersistentVolume Setup in Minikube
+
+```bash
+sudo mkdir -p /mnt/data/minio
+sudo chmod 700 /mnt/data/minio
+```
+
 # PostgreSQL accessible on localhost
 
 ```bash
