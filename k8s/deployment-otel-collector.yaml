@@ -43,6 +43,11 @@ spec:
             - name: otel-collector-config-yaml
               mountPath: /etc/otelcol
               readOnly: true
+          ports:
+            - name: oltp-grpc
+              containerPort: 4317
+            - name: prometheus-metrics
+              containerPort: 9090
       volumes:
         - name: otel-collector-config-yaml
           configMap:
