@@ -78,7 +78,7 @@ spec:
             - name: OTEL_COLLECTOR_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: otel-configmap
+                  name: otel-collector-configmap
                   key: otel-collector-host
           ports:
             - containerPort: 40690

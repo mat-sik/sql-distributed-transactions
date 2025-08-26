@@ -28,3 +28,10 @@ eval $(minikube docker-env)
 ```bash
 eval $(minikube docker-env -u)
 ```
+
+# Create configmap with a config file for otel collector
+
+```bash
+minikube kubectl -- create configmap otel-collector-config-yaml-configmap \
+  --from-file=config.yaml=./otel-collector.yaml
+```
