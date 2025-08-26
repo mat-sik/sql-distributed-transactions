@@ -15,12 +15,12 @@ kind: ConfigMap
 metadata:
   name: server-configmap
 data:
-  server-port: "40690"
-  server-executor-transaction-interval: "1s"
-  server-executor-worker-amount: "2"
-  server-executor-batch-size: "400"
-  server-executor-sender-amount: "2"
-  server-psql-url: "postgres://postgres:postgres@server-psql-0.server-psql:5432/coordinator"
+  port: "40690"
+  executor-transaction-interval: "1s"
+  executor-worker-amount: "2"
+  executor-batch-size: "400"
+  executor-sender-amount: "2"
+  psql-url: "postgres://postgres:postgres@server-psql-0.server-psql:5432/coordinator"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -52,31 +52,31 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: server-configmap
-                  key: server-executor-transaction-interval
+                  key: executor-transaction-interval
             - name: SERVER_EXECUTOR_WORKER_AMOUNT
               valueFrom:
                 configMapKeyRef:
                   name: server-configmap
-                  key: server-executor-worker-amount
+                  key: executor-worker-amount
             - name: SERVER_EXECUTOR_BATCH_SIZE
               valueFrom:
                 configMapKeyRef:
                   name: server-configmap
-                  key: server-executor-batch-size
+                  key: executor-batch-size
             - name: SERVER_EXECUTOR_SENDER_AMOUNT
               valueFrom:
                 configMapKeyRef:
                   name: server-configmap
-                  key: server-executor-sender-amount
+                  key: executor-sender-amount
             - name: SERVER_PSQL_URL
               valueFrom:
                 configMapKeyRef:
                   name: server-configmap
-                  key: server-psql-url
+                  key: psql-url
             - name: OTEL_COLLECTOR_HOST
               valueFrom:
                 configMapKeyRef:
                   name: otel-collector-configmap
-                  key: otel-collector-host
+                  key: host
           ports:
             - containerPort: 40690

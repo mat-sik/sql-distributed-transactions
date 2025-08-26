@@ -15,8 +15,8 @@ kind: ConfigMap
 metadata:
   name: dummy-configmap
 data:
-  dummy-port: "40691"
-  dummy-to-receive: "100_000"
+  port: "40691"
+  to-receive: "100_000"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -43,16 +43,16 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: dummy-configmap
-                  key: dummy-port
+                  key: port
             - name: DUMMY_TO_RECEIVE
               valueFrom:
                 configMapKeyRef:
                   name: dummy-configmap
-                  key: dummy-to-receive
+                  key: to-receive
             - name: OTEL_COLLECTOR_HOST
               valueFrom:
                 configMapKeyRef:
                   name: otel-collector-configmap
-                  key: otel-collector-host
+                  key: host
           ports:
             - containerPort: 40691

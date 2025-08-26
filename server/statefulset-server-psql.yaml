@@ -16,15 +16,15 @@ metadata:
   name: server-psql-secret
 type: Opaque
 stringData:
-  server-psql-user: "postgres"
-  server-psql-password: "postgres"
+  user: "postgres"
+  password: "postgres"
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: server-psql-configmap
 data:
-  server-psql-name: "coordinator"
+  db: "coordinator"
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -74,17 +74,17 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: server-psql-secret
-                  key: server-psql-user
+                  key: user
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: server-psql-secret
-                  key: server-psql-password
+                  key: password
             - name: POSTGRES_DB
               valueFrom:
                 configMapKeyRef:
                   name: server-psql-configmap
-                  key: server-psql-name
+                  key: db
           ports:
             - containerPort: 5432
           volumeMounts:

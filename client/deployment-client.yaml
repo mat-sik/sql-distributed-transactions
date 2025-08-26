@@ -17,8 +17,8 @@ metadata:
 data:
   server-url: "http://server:40690"
   dummy-host: "dummy:40691"
-  client-to-send-per-replica: "100_000"
-  client-worker-count: "2"
+  to-send-per-replica: "100_000"
+  worker-count: "2"
 ---
 apiVersion: batch/v1
 kind: Job
@@ -47,14 +47,14 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: client-configmap
-                  key: client-to-send-per-replica
+                  key: to-send-per-replica
             - name: CLIENT_WORKER_COUNT
               valueFrom:
                 configMapKeyRef:
                   name: client-configmap
-                  key: client-worker-count
+                  key: worker-count
             - name: OTEL_COLLECTOR_HOST
               valueFrom:
                 configMapKeyRef:
                   name: otel-collector-configmap
-                  key: otel-collector-host
+                  key: host

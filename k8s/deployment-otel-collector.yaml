@@ -20,7 +20,7 @@ kind: ConfigMap
 metadata:
   name: otel-collector-configmap
 data:
-  otel-collector-host: "otel-collector:4317"
+  host: "otel-collector:4317"
 ---
 apiVersion: apps/v1
 kind: Deployment
