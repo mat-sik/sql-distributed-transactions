@@ -22,8 +22,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: dummy
-  labels:
-    app: dummy
 spec:
   selector:
     matchLabels:
