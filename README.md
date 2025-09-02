@@ -33,6 +33,13 @@ sudo chown 10001:10001 /mnt/data/tempo
 sudo chmod 700 /mnt/data/tempo
 ```
 
+# Mimir Local PersistentVolume Setup in Minikube
+
+```bash
+sudo mkdir -p /mnt/data/mimir
+sudo chmod 700 /mnt/data/mimir
+```
+
 # PostgreSQL accessible on localhost
 
 ```bash
@@ -68,4 +75,11 @@ minikube kubectl -- create configmap prometheus-config-yaml-configmap \
 ```bash
 minikube kubectl -- create configmap tempo-config-yaml-configmap \
   --from-file=tempo.yaml=./tempo.yaml
+```
+
+# Create configmap with a config file for mimir 
+
+```bash
+minikube kubectl -- create configmap mimir-config-yaml-configmap \
+  --from-file=mimir.yaml=./mimir.yaml
 ```
