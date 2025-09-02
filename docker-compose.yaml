@@ -63,7 +63,8 @@ services:
       - net
     volumes:
       - ./otel-collector.yaml:/etc/otel-collector.yaml
-    command: [ "--config=/etc/otel-collector.yaml" ]
+    command:
+      --config=/etc/otel-collector.yaml
 
   tempo:
     image: grafana/tempo:2.8.1
@@ -75,7 +76,8 @@ services:
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml
       - tempo-data:/var/tempo
-    command: [ "-config.file=/etc/tempo.yaml" ]
+    command:
+      -config.file=/etc/tempo.yaml
 
   minio:
     image: minio/minio:RELEASE.2025-05-24T17-08-30Z
@@ -89,7 +91,11 @@ services:
     environment:
       MINIO_ROOT_USER: minioroot
       MINIO_ROOT_PASSWORD: minioroot
-    command: [ "server", "--console-address", ":9001", "/data" ]
+    command:
+     - server
+     - --console-address
+     - ":9001"
+     - /data
 
   create-buckets:
     image: minio/mc:RELEASE.2025-05-21T01-59-54Z
@@ -107,13 +113,15 @@ services:
 
   mimir:
     image: grafana/mimir:2.15.3
+    ports:
+      - "9009:9009"
     networks:
       - net
     volumes:
-      - ./mimir.yaml:/etc/mimir/mimir.yaml
+      - ./mimir.yaml:/etc/mimir.yaml
       - mimir-data:/data
     command:
-      - -config.file=/etc/mimir/mimir.yaml
+      - -config.file=/etc/mimir.yaml
 
   alloy:
     image: grafana/alloy:v1.9.1
@@ -122,9 +130,13 @@ services:
     networks:
       - net
     volumes:
-      - ./config.alloy:/etc/alloy/config.alloy
+      - ./config.alloy:/etc/config.alloy
       - /var/run/docker.sock:/var/run/docker.sock
-    command: [ "run", "--server.http.listen-addr=0.0.0.0:12345", "--storage.path=/var/lib/alloy/data", "/etc/alloy/config.alloy" ]
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/config.alloy
 
   loki:
     image: grafana/loki:3.5.1
@@ -134,9 +146,10 @@ services:
       - net
     user: root
     volumes:
-      - ./loki.yaml:/etc/loki/loki.yaml
+      - ./loki.yaml:/etc/loki.yaml
       - loki-wal-data:/loki/wal
-    command: [ "-config.file=/etc/loki/loki.yaml" ]
+    command:
+      -config.file=/etc/loki.yaml
 
   grafana:
     image: grafana/grafana:12.0.1
