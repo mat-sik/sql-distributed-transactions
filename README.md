@@ -40,6 +40,14 @@ sudo mkdir -p /mnt/data/mimir
 sudo chmod 700 /mnt/data/mimir
 ```
 
+# Loki Local PersistentVolume Setup in Minikube
+
+```bash
+sudo mkdir -p /mnt/data/loki
+sudo chown 10001:10001 /mnt/data/loki
+sudo chmod 700 /mnt/data/loki
+```
+
 # PostgreSQL accessible on localhost
 
 ```bash
@@ -82,4 +90,11 @@ minikube kubectl -- create configmap tempo-config-yaml-configmap \
 ```bash
 minikube kubectl -- create configmap mimir-config-yaml-configmap \
   --from-file=mimir.yaml=./mimir.yaml
+```
+
+# Create configmap with a config file for loki
+
+```bash
+minikube kubectl -- create configmap loki-config-yaml-configmap \
+  --from-file=loki.yaml=./loki.yaml
 ```
