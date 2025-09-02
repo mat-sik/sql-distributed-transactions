@@ -25,6 +25,14 @@ sudo mkdir -p /mnt/data/minio
 sudo chmod 700 /mnt/data/minio
 ```
 
+# Tempo Local PersistentVolume Setup in Minikube
+
+```bash
+sudo mkdir -p /mnt/data/tempo
+sudo chown 10001:10001 /mnt/data/tempo
+sudo chmod 700 /mnt/data/tempo
+```
+
 # PostgreSQL accessible on localhost
 
 ```bash
@@ -53,4 +61,11 @@ minikube kubectl -- create configmap otel-collector-config-yaml-configmap \
 ```bash
 minikube kubectl -- create configmap prometheus-config-yaml-configmap \
   --from-file=prometheus.yaml=./prometheus.yaml
+```
+
+# Create configmap with a config file for tempo
+
+```bash
+minikube kubectl -- create configmap tempo-config-yaml-configmap \
+  --from-file=tempo.yaml=./tempo.yaml
 ```
