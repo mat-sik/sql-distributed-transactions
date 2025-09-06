@@ -54,12 +54,12 @@ spec:
         - name: loki
           image: grafana/loki:3.5.3
           args:
-            - -config.file=/etc/loki.yaml
+            - -config.file=/etc/loki/loki.yaml
           ports:
             - containerPort: 3100
           volumeMounts:
             - name: loki-config-yaml
-              mountPath: /etc
+              mountPath: /etc/loki
               readOnly: true
             - name: loki
               mountPath: /loki/wal

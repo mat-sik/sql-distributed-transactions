@@ -54,12 +54,12 @@ spec:
         - name: tempo
           image: grafana/tempo:2.8.2
           args:
-            - -config.file=/etc/tempo.yaml
+            - -config.file=/etc/tempo/tempo.yaml
           ports:
             - containerPort: 3200
           volumeMounts:
             - name: tempo-config-yaml
-              mountPath: /etc
+              mountPath: /etc/tempo
               readOnly: true
             - name: tempo
               mountPath: /var/tempo
