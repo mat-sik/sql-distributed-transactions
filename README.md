@@ -9,46 +9,46 @@ minikube ssh
 ```
 
 ```bash
-sudo mkdir -p /mnt/data/server-psql
-sudo chown 999:999 /mnt/data/server-psql
+sudo mkdir -p /mnt/data/server-psql &&
+sudo chown 999:999 /mnt/data/server-psql &&
 sudo chmod 700 /mnt/data/server-psql
 ```
 
 # Prometheus Local PersistentVolume Setup in Minikube
 
 ```bash
-sudo mkdir -p /mnt/data/prometheus
-sudo chown 65534:65534 /mnt/data/prometheus
+sudo mkdir -p /mnt/data/prometheus &&
+sudo chown 65534:65534 /mnt/data/prometheus &&
 sudo chmod 700 /mnt/data/prometheus
 ```
 
 # Minio Local PersistentVolume Setup in Minikube
 
 ```bash
-sudo mkdir -p /mnt/data/minio
+sudo mkdir -p /mnt/data/minio &&
 sudo chmod 700 /mnt/data/minio
 ```
 
 # Tempo Local PersistentVolume Setup in Minikube
 
 ```bash
-sudo mkdir -p /mnt/data/tempo
-sudo chown 10001:10001 /mnt/data/tempo
+sudo mkdir -p /mnt/data/tempo &&
+sudo chown 10001:10001 /mnt/data/tempo &&
 sudo chmod 700 /mnt/data/tempo
 ```
 
 # Mimir Local PersistentVolume Setup in Minikube
 
 ```bash
-sudo mkdir -p /mnt/data/mimir
+sudo mkdir -p /mnt/data/mimir &&
 sudo chmod 700 /mnt/data/mimir
 ```
 
 # Loki Local PersistentVolume Setup in Minikube
 
 ```bash
-sudo mkdir -p /mnt/data/loki
-sudo chown 10001:10001 /mnt/data/loki
+sudo mkdir -p /mnt/data/loki &&
+sudo chown 10001:10001 /mnt/data/loki &&
 sudo chmod 700 /mnt/data/loki
 ```
 
