@@ -130,7 +130,7 @@ services:
     networks:
       - net
     volumes:
-      - ./config.alloy:/etc/config.alloy
+      - ./config-docker-compose.alloy:/etc/config.alloy
       - /var/run/docker.sock:/var/run/docker.sock
     command:
       - run
