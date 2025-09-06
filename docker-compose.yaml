@@ -64,7 +64,7 @@ services:
     volumes:
       - ./otel-collector.yaml:/etc/otel-collector.yaml
     command:
-      --config=/etc/otel-collector.yaml
+      - --config=/etc/otel-collector.yaml
 
   tempo:
     image: grafana/tempo:2.8.1
@@ -77,7 +77,7 @@ services:
       - ./tempo.yaml:/etc/tempo.yaml
       - tempo-data:/var/tempo
     command:
-      -config.file=/etc/tempo.yaml
+      - -config.file=/etc/tempo.yaml
 
   minio:
     image: minio/minio:RELEASE.2025-05-24T17-08-30Z
@@ -149,7 +149,7 @@ services:
       - ./loki.yaml:/etc/loki.yaml
       - loki-wal-data:/loki/wal
     command:
-      -config.file=/etc/loki.yaml
+      - -config.file=/etc/loki.yaml
 
   grafana:
     image: grafana/grafana:12.0.1
