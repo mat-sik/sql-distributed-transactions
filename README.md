@@ -58,6 +58,12 @@ sudo chmod 700 /mnt/data/loki
 minikube kubectl -- port-forward service/server-psql 5432:5432
 ```
 
+# Grafana accessible on localhost
+
+```bash
+minikube kubectl -- port-forward service/grafana 3000:3000
+```
+
 # Create images for minikube from host docker
 
 ```bash
