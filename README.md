@@ -98,3 +98,10 @@ minikube kubectl -- create configmap mimir-config-yaml-configmap \
 minikube kubectl -- create configmap loki-config-yaml-configmap \
   --from-file=loki.yaml=./loki.yaml
 ```
+
+# Create configmap with a config file for grafana
+
+```bash
+minikube kubectl -- create configmap grafana-config-yaml-configmap \
+  --from-file=datasources.yaml=./grafana-datasources.yaml
+```
