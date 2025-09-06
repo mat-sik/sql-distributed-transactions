@@ -36,7 +36,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: dummy
-          image: dummy:latest
+          image: sql-distributed-transactions-dummy:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: DUMMY_PORT

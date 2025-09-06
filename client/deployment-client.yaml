@@ -30,7 +30,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: client
-          image: client:latest
+          image: sql-distributed-transactions-client:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: SERVER_URL

@@ -40,7 +40,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: server
-          image: server:latest
+          image: sql-distributed-transactions-server:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: SERVER_PORT
