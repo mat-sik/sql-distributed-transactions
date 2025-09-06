@@ -5,6 +5,10 @@ minikube start
 ```
 
 ```bash
+minikube ssh
+```
+
+```bash
 sudo mkdir -p /mnt/data/server-psql
 sudo chown 999:999 /mnt/data/server-psql
 sudo chmod 700 /mnt/data/server-psql
