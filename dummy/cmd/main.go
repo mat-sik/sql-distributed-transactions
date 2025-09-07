@@ -5,6 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"time"
+
 	setup "github.com/mat-sik/sql-distributed-transactions/common/otel"
 	"github.com/mat-sik/sql-distributed-transactions/dummy/internal/config"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
@@ -14,13 +22,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
-	"log/slog"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"sync"
-	"time"
 )
 
 func main() {
@@ -30,17 +31,18 @@ func main() {
 	collectorConfig, err := config.NewCollectorConfig(ctx)
 	if err != nil {
 		slog.Error("Failed to initialize collector config", "err", err)
-		return
+		panic(err)
 	}
 
 	shutdown, err := setup.InitOTelSDK(ctx, collectorConfig.CollectorHost, serviceName)
 	if err != nil {
 		slog.Error("Failed to initialize otel SDK", "err", err)
-		return
+		panic(err)
 	}
 	defer func() {
 		if err = shutdown(ctx); err != nil {
 			slog.Error("Failed to shutdown otel SDK", "err", err)
+			panic(err)
 		}
 	}()
 
@@ -53,7 +55,7 @@ func main() {
 	serverConfig, err := config.NewServerConfig(ctx)
 	if err != nil {
 		slog.Error("Failed to initialize server config", "err", err)
-		return
+		panic(err)
 	}
 
 	runServer(ctx, tracer, meter, serverConfig)
@@ -77,6 +79,7 @@ func runServer(ctx context.Context, tracer trace.Tracer, meter metric.Meter, ser
 	select {
 	case err := <-serverErrCh:
 		slog.Error("Received server error", "err", err)
+		panic(err)
 	case <-ctx.Done():
 		slog.Info("Shutting down server...")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -85,6 +88,7 @@ func runServer(ctx context.Context, tracer trace.Tracer, meter metric.Meter, ser
 		err := server.Shutdown(shutdownCtx)
 		if err != nil {
 			slog.Error("Server shutdown failed", "err", err)
+			panic(err)
 		}
 		slog.Info("Server shutdown complete")
 	}
