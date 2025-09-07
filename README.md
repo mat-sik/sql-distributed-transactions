@@ -55,10 +55,12 @@ minikube kubectl -- port-forward service/minio 9001:9001
 # Create images for minikube from host docker
 
 ```bash
-eval $(minikube docker-env)
-```
+eval $(minikube docker-env) &&
 
-```bash
+docker build -t sql-distributed-transactions-server ./server &&
+docker build -t sql-distributed-transactions-dummy ./dummy &&
+docker build -t sql-distributed-transactions-client ./client && 
+
 eval $(minikube docker-env -u)
 ```
 
@@ -68,12 +70,6 @@ eval $(minikube docker-env -u)
 docker build -t sql-distributed-transactions-server ./server &&
 docker build -t sql-distributed-transactions-dummy ./dummy &&
 docker build -t sql-distributed-transactions-client ./client
-```
-
-```bash
-minikube image rm sql-distributed-transactions-server &&
-minikube image rm sql-distributed-transactions-dummy &&
-minikube image rm sql-distributed-transactions-client
 ```
 
 ```bash
