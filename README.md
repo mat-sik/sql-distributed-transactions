@@ -4,6 +4,18 @@
 minikube start
 ```
 
+# Apply all objects
+
+```bash
+ minikube kubectl -- apply -f k8s
+```
+
+# Delete all objects
+
+```bash
+ minikube kubectl -- delete -f k8s
+```
+
 # Create directories for PVs
 
 ```bash
