@@ -77,14 +77,14 @@ eval $(minikube docker-env -u)
 # Provide images from host to minikube
 
 ```bash
-docker build -t sql-distributed-transactions-server ./server
-docker build -t sql-distributed-transactions-dummy ./dummy
+docker build -t sql-distributed-transactions-server ./server &&
+docker build -t sql-distributed-transactions-dummy ./dummy &&
 docker build -t sql-distributed-transactions-client ./client
 ```
 
 ```bash
-minikube image load sql-distributed-transactions-server
-minikube image load sql-distributed-transactions-dummy
+minikube image load sql-distributed-transactions-server &&
+minikube image load sql-distributed-transactions-dummy &&
 minikube image load sql-distributed-transactions-client
 ```
 
