@@ -93,7 +93,7 @@ minikube kubectl -- delete configmap loki-config-yaml-configmap &&
 minikube kubectl -- delete configmap grafana-config-yaml-configmap &&
 
 minikube kubectl -- create configmap otel-collector-config-yaml-configmap \
-  --from-file=config.yaml=./otel-collector.yaml &&
+  --from-file=otel-collector.yaml=./otel-collector.yaml &&
   
 minikube kubectl -- create configmap prometheus-config-yaml-configmap \
   --from-file=prometheus.yaml=./prometheus.yaml &&
