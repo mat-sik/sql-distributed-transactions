@@ -40,7 +40,6 @@ func main() {
 	defer func() {
 		if err = shutdown(ctx); err != nil {
 			slog.Error("Failed to shutdown otel SDK", "err", err)
-			panic(err)
 		}
 	}()
 
