@@ -9,6 +9,7 @@ services:
       DUMMY_HOST: dummy:40691
       CLIENT_TO_SEND: 1_000_000
       CLIENT_WORKER_COUNT: 2
+      OTEL_COLLECTOR_HOST: otel-collector:4317
 
   dummy:
     restart: on-failure
@@ -17,6 +18,8 @@ services:
       - net
     environment:
       DUMMY_TO_RECEIVE: 1_000_000
+      DUMMY_PORT: 40691
+      OTEL_COLLECTOR_HOST: otel-collector:4317
 
   server:
     restart: on-failure
@@ -24,11 +27,13 @@ services:
     networks:
       - net
     environment:
+      SERVER_PORT: 40690
       SERVER_PSQL_URL: postgres://postgres:postgres@coordinator-db:5432/coordinator
       SERVER_EXECUTOR_TRANSACTION_INTERVAL: 5s
       SERVER_EXECUTOR_WORKER_AMOUNT: 2
       SERVER_EXECUTOR_BATCH_SIZE: 1000
       SERVER_EXECUTOR_SENDER_AMOUNT: 2
+      OTEL_COLLECTOR_HOST: otel-collector:4317
 
   coordinator-db:
     restart: on-failure
