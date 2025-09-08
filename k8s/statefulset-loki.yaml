@@ -43,13 +43,11 @@ spec:
       app: loki
   serviceName: loki
   replicas: 1
-  minReadySeconds: 10
   template:
     metadata:
       labels:
         app: loki
     spec:
-      terminationGracePeriodSeconds: 10
       containers:
         - name: loki
           image: grafana/loki:3.5.3

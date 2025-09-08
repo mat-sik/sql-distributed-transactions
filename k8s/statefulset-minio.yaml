@@ -57,13 +57,11 @@ spec:
       app: minio
   serviceName: minio
   replicas: 1
-  minReadySeconds: 10
   template:
     metadata:
       labels:
         app: minio
     spec:
-      terminationGracePeriodSeconds: 10
       containers:
         - name: minio
           image: minio/minio:RELEASE.2025-07-23T15-54-02Z

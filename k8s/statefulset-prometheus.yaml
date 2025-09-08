@@ -43,13 +43,11 @@ spec:
       app: prometheus
   serviceName: prometheus
   replicas: 1
-  minReadySeconds: 10
   template:
     metadata:
       labels:
         app: prometheus
     spec:
-      terminationGracePeriodSeconds: 10
       containers:
         - name: prometheus
           image: prom/prometheus:v3.5.0

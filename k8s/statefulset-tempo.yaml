@@ -48,13 +48,11 @@ spec:
       app: tempo
   serviceName: tempo
   replicas: 1
-  minReadySeconds: 10
   template:
     metadata:
       labels:
         app: tempo
     spec:
-      terminationGracePeriodSeconds: 10
       containers:
         - name: tempo
           image: grafana/tempo:2.8.2
