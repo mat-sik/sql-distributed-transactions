@@ -65,11 +65,11 @@ minikube kubectl -- port-forward service/minio 9001:9001
 # Create images for minikube from host docker
 
 ```bash
-eval $(minikube docker-env) &&
+eval $(minikube docker-env) 
 
-docker build -t sql-distributed-transactions-server ./server &&
-docker build -t sql-distributed-transactions-dummy ./dummy &&
-docker build -t sql-distributed-transactions-client ./client && 
+docker build -t sql-distributed-transactions-server ./server
+docker build -t sql-distributed-transactions-dummy ./dummy
+docker build -t sql-distributed-transactions-client ./client
 
 eval $(minikube docker-env -u)
 ```
@@ -77,47 +77,47 @@ eval $(minikube docker-env -u)
 # Provide images from host to minikube
 
 ```bash
-docker build -t sql-distributed-transactions-server ./server &&
-docker build -t sql-distributed-transactions-dummy ./dummy &&
+docker build -t sql-distributed-transactions-server ./server
+docker build -t sql-distributed-transactions-dummy ./dummy
 docker build -t sql-distributed-transactions-client ./client
 ```
 
 ```bash
-minikube image load sql-distributed-transactions-server &&
-minikube image load sql-distributed-transactions-dummy &&
+minikube image load sql-distributed-transactions-server
+minikube image load sql-distributed-transactions-dummy
 minikube image load sql-distributed-transactions-client
 ```
 
 # Create configmaps with config files
 
 ```bash
-minikube kubectl -- delete configmap otel-collector-config-yaml-configmap &&
-minikube kubectl -- delete configmap prometheus-config-yaml-configmap &&
-minikube kubectl -- delete configmap tempo-config-yaml-configmap &&
-minikube kubectl -- delete configmap mimir-config-yaml-configmap &&
-minikube kubectl -- delete configmap loki-config-yaml-configmap &&
-minikube kubectl -- delete configmap grafana-config-yaml-configmap &&
+minikube kubectl -- delete configmap otel-collector-config-yaml-configmap
+minikube kubectl -- delete configmap prometheus-config-yaml-configmap
+minikube kubectl -- delete configmap tempo-config-yaml-configmap
+minikube kubectl -- delete configmap mimir-config-yaml-configmap
+minikube kubectl -- delete configmap loki-config-yaml-configmap
+minikube kubectl -- delete configmap grafana-config-yaml-configmap
 minikube kubectl -- delete configmap alloy-config-yaml-configmap
 ```
 
 ```bash
 minikube kubectl -- create configmap otel-collector-config-yaml-configmap \
-  --from-file=otel-collector.yaml=./otel-collector.yaml &&
+  --from-file=otel-collector.yaml=./otel-collector.yaml
   
 minikube kubectl -- create configmap prometheus-config-yaml-configmap \
-  --from-file=prometheus.yaml=./prometheus.yaml &&
+  --from-file=prometheus.yaml=./prometheus.yaml
   
 minikube kubectl -- create configmap tempo-config-yaml-configmap \
-  --from-file=tempo.yaml=./tempo.yaml &&
+  --from-file=tempo.yaml=./tempo.yaml
   
 minikube kubectl -- create configmap mimir-config-yaml-configmap \
-  --from-file=mimir.yaml=./mimir.yaml &&
+  --from-file=mimir.yaml=./mimir.yaml
   
 minikube kubectl -- create configmap loki-config-yaml-configmap \
-  --from-file=loki.yaml=./loki.yaml &&
+  --from-file=loki.yaml=./loki.yaml
   
 minikube kubectl -- create configmap grafana-config-yaml-configmap \
-  --from-file=datasources.yaml=./grafana-datasources.yaml &&
+  --from-file=datasources.yaml=./grafana-datasources.yaml
   
 minikube kubectl -- create configmap alloy-config-yaml-configmap \
   --from-file=config.alloy=./config-k8s.alloy
