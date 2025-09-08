@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloy
+spec:
+  selector:
+    app: alloy
+  ports:
+    - protocol: TCP
+      port: 12345
+      targetPort: 12345
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: alloy
+spec:
+  selector:
+    matchLabels:
+      app: alloy
+  template:
+    metadata:
+      labels:
+        app: alloy
+    spec:
+      containers:
+        - name: alloy
+          image: grafana/alloy:v1.9.1
+          args:
+            - run
+            - --server.http.listen-addr=0.0.0.0:12345
+            - --storage.path=/var/lib/alloy/data
+            - /etc/alloy/config.alloy
+          ports:
+            - containerPort: 12345
+          volumeMounts:
+            - name: alloy-config-yaml
+              mountPath: /etc/alloy
+              readOnly: true
+            - name: alloy-data
+              mountPath: /var/lib/alloy/data
+            - name: var-log-pods
+              mountPath: /var/log/pods
+              readOnly: true
+      volumes:
+        - name: alloy-config-yaml
+          configMap:
+            name: alloy-config-yaml-configmap
+        - name: alloy-data
+          hostPath:
+            path: /var/lib/alloy/data
+        - name: var-log-pods
+          hostPath:
+            path: /var/log/pods

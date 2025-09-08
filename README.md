@@ -1,9 +1,3 @@
-# PostgreSQL Local PersistentVolume Setup in Minikube
-
-```bash
-minikube start
-```
-
 # Apply all objects
 
 ```bash
@@ -42,6 +36,10 @@ sudo chmod 700 /mnt/data/mimir &&
 sudo mkdir -p /mnt/data/loki &&
 sudo chown 10001:10001 /mnt/data/loki &&
 sudo chmod 700 /mnt/data/loki &&
+
+sudo mkdir -p /var/lib/alloy/data &&
+sudo chown 473:473 /var/lib/alloy/data &&
+sudo chmod 700 /var/lib/alloy/data &&
 
 exit
 ```
@@ -98,7 +96,8 @@ minikube kubectl -- delete configmap prometheus-config-yaml-configmap &&
 minikube kubectl -- delete configmap tempo-config-yaml-configmap &&
 minikube kubectl -- delete configmap mimir-config-yaml-configmap &&
 minikube kubectl -- delete configmap loki-config-yaml-configmap &&
-minikube kubectl -- delete configmap grafana-config-yaml-configmap
+minikube kubectl -- delete configmap grafana-config-yaml-configmap &&
+minikube kubectl -- delete configmap alloy-config-yaml-configmap
 ```
 
 ```bash
@@ -118,5 +117,8 @@ minikube kubectl -- create configmap loki-config-yaml-configmap \
   --from-file=loki.yaml=./loki.yaml &&
   
 minikube kubectl -- create configmap grafana-config-yaml-configmap \
-  --from-file=datasources.yaml=./grafana-datasources.yaml
+  --from-file=datasources.yaml=./grafana-datasources.yaml &&
+  
+minikube kubectl -- create configmap alloy-config-yaml-configmap \
+  --from-file=config.alloy=./config-k8s.alloy
 ```
