@@ -15,6 +15,8 @@
 ```bash
 minikube ssh
 
+sudo rm -rf /mnt/data &&
+
 sudo mkdir -p /mnt/data/server-psql &&
 sudo chown 999:999 /mnt/data/server-psql &&
 sudo chmod 700 /mnt/data/server-psql &&
@@ -37,9 +39,9 @@ sudo mkdir -p /mnt/data/loki &&
 sudo chown 10001:10001 /mnt/data/loki &&
 sudo chmod 700 /mnt/data/loki &&
 
-sudo mkdir -p /var/lib/alloy/data &&
-sudo chown 473:473 /var/lib/alloy/data &&
-sudo chmod 700 /var/lib/alloy/data &&
+sudo mkdir -p /mnt/data/alloy &&
+sudo chown 473:473 /mnt/data/alloy &&
+sudo chmod 700 /mnt/data/alloy &&
 
 exit
 ```
