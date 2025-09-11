@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+
 	"github.com/cenkalti/backoff/v5"
 	api "github.com/mat-sik/sql-distributed-transactions/api/transaction"
 	"github.com/mat-sik/sql-distributed-transactions/client/internal/config"
@@ -14,11 +20,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/signal"
-	"sync"
 )
 
 func main() {
@@ -28,13 +29,13 @@ func main() {
 	collectorConfig, err := config.NewCollectorConfig(ctx)
 	if err != nil {
 		slog.Error("failed to initialize collector config", "err", err)
-		return
+		panic(err)
 	}
 
 	shutdown, err := setup.InitOTelSDK(ctx, collectorConfig.CollectorHost, serviceName)
 	if err != nil {
 		slog.Error("Failed to initialize otel SDK", "err", err)
-		return
+		panic(err)
 	}
 	defer func() {
 		if err = shutdown(ctx); err != nil {
@@ -54,7 +55,7 @@ func main() {
 	clientConfig, err := config.NewClientConfig(ctx)
 	if err != nil {
 		slog.Error("Failed to initialize client config", "err", err)
-		return
+		panic(err)
 	}
 
 	runClient(ctx, tracer, clientConfig, client)

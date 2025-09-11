@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dummy
+spec:
+  selector:
+    app: dummy
+  ports:
+    - protocol: TCP
+      port: 40691
+      targetPort: 40691
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dummy-configmap
+data:
+  port: "40691"
+  to-receive: "100_000"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dummy
+spec:
+  selector:
+    matchLabels:
+      app: dummy
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: dummy
+    spec:
+      containers:
+        - name: dummy
+          image: sql-distributed-transactions-dummy:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DUMMY_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: dummy-configmap
+                  key: port
+            - name: DUMMY_TO_RECEIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: dummy-configmap
+                  key: to-receive
+            - name: OTEL_COLLECTOR_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: otel-collector-configmap
+                  key: host
+          ports:
+            - containerPort: 40691

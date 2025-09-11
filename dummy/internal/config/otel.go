@@ -6,7 +6,7 @@ import (
 )
 
 type Collector struct {
-	CollectorHost string `env:"DUMMY_COLLECTOR_HOST, default=localhost:4317"`
+	CollectorHost string `env:"OTEL_COLLECTOR_HOST, default=localhost:4317"`
 }
 
 func NewCollectorConfig(ctx context.Context) (Collector, error) {

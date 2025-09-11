@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: 9090
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/data/prometheus
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - minikube
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: prometheus
+  serviceName: prometheus
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.5.0
+          args:
+            - --config.file=/etc/prometheus/prometheus.yaml
+            - --storage.tsdb.path=/prometheus
+            - --web.enable-remote-write-receiver # scrape otel collector
+            - --enable-feature=exemplar-storage  # associate metrics with otel
+            - --enable-feature=native-histograms # some other otel metrics from traces
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: prometheus-config-yaml
+              mountPath: /etc/prometheus
+              readOnly: true
+            - name: prometheus
+              mountPath: /prometheus
+      volumes:
+        - name: prometheus-config-yaml
+          configMap:
+            name: prometheus-config-yaml-configmap
+  volumeClaimTemplates:
+    - metadata:
+        name: prometheus
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: local-storage
+        resources:
+          requests:
+            storage: 1Gi

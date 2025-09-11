@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloy
+spec:
+  selector:
+    app: alloy
+  ports:
+    - protocol: TCP
+      port: 12345
+      targetPort: 12345
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: alloy
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: alloy
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: alloy
+subjects:
+  - kind: ServiceAccount
+    name: alloy
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: alloy
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: alloy
+spec:
+  selector:
+    matchLabels:
+      app: alloy
+  template:
+    metadata:
+      labels:
+        app: alloy
+    spec:
+      serviceAccountName: alloy
+      containers:
+        - name: alloy
+          image: grafana/alloy:v1.9.1
+          args:
+            - run
+            - --server.http.listen-addr=0.0.0.0:12345
+            - --storage.path=/var/lib/alloy/data
+            - /etc/alloy/config.alloy
+          ports:
+            - containerPort: 12345
+          volumeMounts:
+            - name: alloy-config-yaml
+              mountPath: /etc/alloy
+              readOnly: true
+            - name: alloy-data
+              mountPath: /var/lib/alloy/data
+            - name: var-log-pods
+              mountPath: /var/log/pods
+              readOnly: true
+      volumes:
+        - name: alloy-config-yaml
+          configMap:
+            name: alloy-config-yaml-configmap
+        - name: alloy-data
+          hostPath:
+            path: /mnt/data/alloy
+        - name: var-log-pods
+          hostPath:
+            path: /var/log/pods

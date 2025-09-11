@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"database/sql"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
 	_ "github.com/jackc/pgx/v5/stdlib"
 	setup "github.com/mat-sik/sql-distributed-transactions/common/otel"
 	"github.com/mat-sik/sql-distributed-transactions/server/internal/config"
@@ -12,11 +18,6 @@ import (
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/signal"
-	"time"
 )
 
 func main() {
@@ -26,13 +27,13 @@ func main() {
 	collectorConfig, err := config.NewCollectorConfig(ctx)
 	if err != nil {
 		slog.Error("Failed to initialize the collector config", "err", err)
-		return
+		panic(err)
 	}
 
 	shutdown, err := setup.InitOTelSDK(ctx, collectorConfig.CollectorHost, serviceName)
 	if err != nil {
 		slog.Error("Failed to initialize otel SDK", "err", err)
-		return
+		panic(err)
 	}
 	defer func() {
 		if err = shutdown(ctx); err != nil {
@@ -49,13 +50,13 @@ func main() {
 	databaseConfig, err := config.NewDatabaseConfig(ctx)
 	if err != nil {
 		slog.Error("Failed to initialize the database config", "err", err)
-		return
+		panic(err)
 	}
 
 	pool, err := newDBPool(ctx, databaseConfig)
 	if err != nil {
 		slog.Error("Failed to initialize the pool", "err", err)
-		return
+		panic(err)
 	}
 	defer logging.LoggedClose(pool)
 
@@ -68,7 +69,7 @@ func main() {
 	executorConfig, err := config.NewExecutorConfig(ctx)
 	if err != nil {
 		slog.Error("Failed to initialize the executor configuration", "err", err)
-		return
+		panic(err)
 	}
 
 	go func() {
@@ -80,7 +81,7 @@ func main() {
 	serverConfig, err := config.NewServer(ctx)
 	if err != nil {
 		slog.Error("Failed to initialize the server config", "err", err)
-		return
+		panic(err)
 	}
 
 	handler := server.NewHandler(tracer, repository)
@@ -95,6 +96,7 @@ func main() {
 	select {
 	case err = <-serverErrCh:
 		slog.Error("Received server error", "err", err)
+		panic(err)
 	case <-ctx.Done():
 		slog.Info("Shutting down server...")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -103,6 +105,7 @@ func main() {
 		err = srv.Shutdown(shutdownCtx)
 		if err != nil {
 			slog.Error("Server shutdown failed", "err", err)
+			panic(err)
 		}
 		slog.Info("Server shutdown complete")
 	}

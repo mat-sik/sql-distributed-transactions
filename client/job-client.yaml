@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: client
+spec:
+  selector:
+    app: client
+  ports:
+    - protocol: TCP
+      port: 40691
+      targetPort: 40691
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: client-configmap
+data:
+  server-url: "http://server:40690"
+  dummy-host: "dummy:40691"
+  to-send-per-replica: "100_000"
+  worker-count: "2"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: client
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: client
+          image: sql-distributed-transactions-client:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SERVER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: client-configmap
+                  key: server-url
+            - name: DUMMY_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: client-configmap
+                  key: dummy-host
+            - name: CLIENT_TO_SEND
+              valueFrom:
+                configMapKeyRef:
+                  name: client-configmap
+                  key: to-send-per-replica
+            - name: CLIENT_WORKER_COUNT
+              valueFrom:
+                configMapKeyRef:
+                  name: client-configmap
+                  key: worker-count
+            - name: OTEL_COLLECTOR_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: otel-collector-configmap
+                  key: host
