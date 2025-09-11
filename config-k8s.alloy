@@ -66,6 +66,17 @@ loki.process "pod_logs" {
     }
   }
 
+  stage.json {
+    expressions = {
+      ts = "Timestamp",
+    }
+  }
+
+  stage.timestamp {
+    source = "ts"
+    format = "RFC3339Nano"
+  }
+
   forward_to = [loki.write.pod_logs.receiver]
 }
 
