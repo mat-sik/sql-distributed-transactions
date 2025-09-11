@@ -19,29 +19,24 @@ sudo rm -rf /mnt/data &&
 
 sudo mkdir -p /mnt/data/server-psql &&
 sudo chown 999:999 /mnt/data/server-psql &&
-sudo chmod 700 /mnt/data/server-psql &&
 
 sudo mkdir -p /mnt/data/prometheus &&
 sudo chown 65534:65534 /mnt/data/prometheus &&
-sudo chmod 700 /mnt/data/prometheus &&
 
 sudo mkdir -p /mnt/data/minio &&
-sudo chmod 700 /mnt/data/minio &&
 
 sudo mkdir -p /mnt/data/tempo &&
 sudo chown 10001:10001 /mnt/data/tempo &&
-sudo chmod 700 /mnt/data/tempo &&
 
 sudo mkdir -p /mnt/data/mimir &&
-sudo chmod 700 /mnt/data/mimir &&
 
 sudo mkdir -p /mnt/data/loki &&
 sudo chown 10001:10001 /mnt/data/loki &&
-sudo chmod 700 /mnt/data/loki &&
 
 sudo mkdir -p /mnt/data/alloy &&
 sudo chown 473:473 /mnt/data/alloy &&
-sudo chmod 700 /mnt/data/alloy &&
+
+sudo chmod 700 /mnt/data/* &&
 
 exit
 ```
@@ -69,9 +64,9 @@ minikube kubectl -- port-forward service/minio 9001:9001
 ```bash
 eval $(minikube docker-env) 
 
-docker build -t sql-distributed-transactions-server ./server
-docker build -t sql-distributed-transactions-dummy ./dummy
-docker build -t sql-distributed-transactions-client ./client
+for img in server dummy client; do
+  docker build -t sql-distributed-transactions-$img ./$img
+done
 
 eval $(minikube docker-env -u)
 ```
@@ -79,27 +74,34 @@ eval $(minikube docker-env -u)
 # Provide images from host to minikube
 
 ```bash
-docker build -t sql-distributed-transactions-server ./server
-docker build -t sql-distributed-transactions-dummy ./dummy
-docker build -t sql-distributed-transactions-client ./client
+for img in server dummy client; do
+  docker build -t sql-distributed-transactions-$img ./$img
+done
 ```
 
 ```bash
-minikube image load sql-distributed-transactions-server
-minikube image load sql-distributed-transactions-dummy
-minikube image load sql-distributed-transactions-client
+for img in server dummy client; do
+  minikube image load sql-distributed-transactions-$img
+done
 ```
 
 # Create configmaps with config files
 
 ```bash
-minikube kubectl -- delete configmap otel-collector-config-yaml-configmap
-minikube kubectl -- delete configmap prometheus-config-yaml-configmap
-minikube kubectl -- delete configmap tempo-config-yaml-configmap
-minikube kubectl -- delete configmap mimir-config-yaml-configmap
-minikube kubectl -- delete configmap loki-config-yaml-configmap
-minikube kubectl -- delete configmap grafana-config-yaml-configmap
-minikube kubectl -- delete configmap alloy-config-yaml-configmap
+CONFIGMAPS=(
+  "otel-collector"
+  "prometheus"
+  "tempo"
+  "mimir"
+  "loki"
+  "grafana"
+  "alloy"
+)
+
+for name in "${CONFIGMAPS[@]}"; do
+  cm="${name}-config-yaml-configmap"
+  minikube kubectl -- delete configmap "$cm" --ignore-not-found
+done
 ```
 
 ```bash
