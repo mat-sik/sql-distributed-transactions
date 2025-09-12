@@ -1,0 +1,2 @@
+deployment-server.yaml
+statefulset-server-psql.yaml
