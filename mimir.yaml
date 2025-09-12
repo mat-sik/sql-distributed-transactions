@@ -14,16 +14,12 @@ common:
       access_key_id: minioroot
       secret_access_key: minioroot
       insecure: true
+      bucket_name: mimir-blocks
 
 blocks_storage:
-  s3:
-    bucket_name: mimir-blocks
   tsdb:
     dir: /data/ingester
 
 ingester:
   ring:
-    instance_addr: 127.0.0.1
-    kvstore:
-      store: memberlist
     replication_factor: 1
