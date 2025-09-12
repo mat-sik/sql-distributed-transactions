@@ -120,7 +120,7 @@ services:
 
   mimir:
     restart: on-failure
-    image: grafana/mimir:2.15.3
+    image: grafana/mimir:2.17.1
     networks:
       - net
     volumes:
@@ -147,7 +147,7 @@ services:
 
   loki:
     restart: on-failure
-    image: grafana/loki:3.5.1
+    image: grafana/loki:3.5.5
     networks:
       - net
     user: root

@@ -50,7 +50,7 @@ spec:
     spec:
       containers:
         - name: loki
-          image: grafana/loki:3.5.3
+          image: grafana/loki:3.5.5
           args:
             - -config.file=/etc/loki/loki.yaml
           ports:
@@ -60,7 +60,7 @@ spec:
               mountPath: /etc/loki
               readOnly: true
             - name: loki
-              mountPath: /loki/wal
+              mountPath: /loki
       volumes:
         - name: loki-config-yaml
           configMap:
